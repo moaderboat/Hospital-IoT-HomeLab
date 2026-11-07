@@ -1,0 +1,60 @@
+# Only auto-generated junk and local AI-assistant files are ignored.
+# All code, scripts, configs, docs and backups are tracked.
+
+# AI assistant files (local only, not part of the lab)
+CLAUDE.md
+.claude/
+conversation_lost.txt
+Rev_8_Status_Post_Compact.md
+
+# Stray empty file
+_ul
+
+# Binary files that hold real secrets and can't be scrubbed by the redact filter
+Queen_City_Con/backups/**/*.tgz
+hospital_flow/backups/*.tar
+storage_encryption_keys/
+
+# Word/PowerPoint/PDF copies that contain lab credentials (binary: can't be scrubbed).
+# Scrubbed text versions of the report (Final_Technical_Report_*.md/.html) are tracked instead.
+Final_Technical_Report_Rev_9.docx
+Final_Technical_Report_Rev_9_FINAL.docx
+Final_Technical_Report_Rev_9_FORMATTED.docx
+Final_Technical_Report_Rev_9_WithTOC.docx
+Moad_David_Final_Report.pdf
+weekly_reports/Technical_Report_Living_Document_REV1.docx
+weekly_reports/Technical_Report_Living_Document_REV1.pdf
+weekly_reports/Technical_Report_Living_Document_REV2.pdf
+checkup-1/Checkup_1_PowerPoint.pdf
+checkup-1/Checkup_1_PowerPoint.pptx
+checkup-2/Checkup_2_PowerPoint-UltraMoad.pdf
+checkup-2/Checkup_2_PowerPoint.pdf
+checkup-2/Checkup_2_PowerPoint.pptx
+Queen_City_Con/CON_CREDENTIALS.pdf
+attempt1.pdf
+EXPO Posterboards/Final Posters/poster_2_Final.pdf
+semester_2_project_overview/Senior_Capstone_Progress_Summary.pdf
+
+# Third-party material (other teams' reports, UC course templates/rubric/links) - not ours to publish
+example_reports/
+QI Charging Station for an Industrial Application.pdf
+2026 SD Final Report Template.pdf
+Technical+Report+Template.docx
+Technical_Report_Template.pdf
+Technical_Report_Ruberic.pdf
+EXPO Posterboards/Poster Board Templates.pdf
+EXPO Posterboards/Trifold Board Template.pdf
+EXPO Posterboards/Trifold Board Template.potx
+SYLLABUS-and-SCHEDULE.docx.url
+1.Introduction.pptx.url
+
+# Windows / OneDrive
+desktop.ini
+Thumbs.db
+
+# Office lock files (exist only while a document is open)
+~$*
+
+# Python bytecode (generated from the .py files, which ARE tracked)
+__pycache__/
+*.pyc

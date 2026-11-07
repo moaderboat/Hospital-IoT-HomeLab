@@ -1,0 +1,273 @@
+
+<div style="width:100%;height:640px;position:relative;border-radius:12px;overflow:hidden;">
+  <canvas id="cv" style="width:100%;height:100%;display:block;"></canvas>
+  <div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,0.5);pointer-events:none;white-space:nowrap;">Drag to rotate · Scroll to zoom</div>
+  <div style="position:absolute;top:10px;left:10px;font-size:11px;line-height:1.9;color:#eee;background:rgba(0,0,0,0.55);padding:8px 12px;border-radius:8px;">
+    <div><span style="background:#3a6abf;display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;"></span>Server Rack 24×41×39.5"</div>
+    <div><span style="background:#44cc66;display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;"></span>Demo Boards / Tower</div>
+    <div><span style="background:#555;display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;"></span>Laptops + Monitors</div>
+    <div><span style="background:#8833aa;display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;"></span>HVAC 18×30×20"</div>
+    <div><span style="background:#996611;display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;"></span>Power Conditioners</div>
+    <div><span style="background:#224488;display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;"></span>Office Chair</div>
+    <div><span style="background:#ddbb22;display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;"></span>RJ45 Cables (all)</div>
+    <div><span style="background:#cc2222;display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;"></span>HVAC Hose</div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+const i2f = n => n/12;
+const el = document.getElementById('cv');
+const W = el.parentElement.clientWidth, H = el.parentElement.clientHeight;
+const renderer = new THREE.WebGLRenderer({canvas:el, antialias:true});
+renderer.setSize(W,H);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.shadowMap.enabled = true;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x12121e);
+
+const camera = new THREE.PerspectiveCamera(45, W/H, 0.1, 200);
+camera.position.set(-2, 8, 16);
+camera.lookAt(1, 1, 1);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+dir.position.set(5,10,8); dir.castShadow=true; dir.shadow.mapSize.set(2048,2048);
+scene.add(dir);
+const dir2 = new THREE.DirectionalLight(0x8899ff,0.3);
+dir2.position.set(-5,5,-5); scene.add(dir2);
+
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(30,30),new THREE.MeshLambertMaterial({color:0x0a0a14}));
+floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; scene.add(floor);
+scene.add(new THREE.GridHelper(30,30,0x222233,0x1a1a28));
+
+function box(w,h,d,color,x,y,z){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshPhongMaterial({color,shininess:40}));
+  m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true; scene.add(m); return m;
+}
+function wire(mesh,color,opacity){
+  mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),new THREE.LineBasicMaterial({color,transparent:true,opacity})));
+}
+function cyl(rt,rb,h,color,x,y,z,segs=8){
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,segs),new THREE.MeshPhongMaterial({color,shininess:40}));
+  m.position.set(x,y,z); m.castShadow=true; scene.add(m); return m;
+}
+function cable(points,color){
+  const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));
+  const m=new THREE.Mesh(new THREE.TubeGeometry(curve,40,0.04,6,false),new THREE.MeshPhongMaterial({color,shininess:80}));
+  m.castShadow=true; scene.add(m);
+}
+function spriteLbl(text,x,y,z,sc=1){
+  const c=document.createElement('canvas'); c.width=280; c.height=56;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='rgba(0,0,0,0.72)'; ctx.roundRect(2,2,276,52,8); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font='bold 19px sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(text,140,28);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true}));
+  sp.position.set(x,y,z); sp.scale.set(1.9*sc,0.42*sc,1); scene.add(sp);
+}
+
+function dimLine(x1,y1,z1, x2,y2,z2, labelText, offX, offY, offZ, axis){
+  const mat=new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.5});
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x1,y1,z1),new THREE.Vector3(x2,y2,z2)]),mat));
+  const tickLen=0.12;
+  [[x1,y1,z1],[x2,y2,z2]].forEach(([tx,ty,tz])=>{
+    let tp;
+    if(axis==='x') tp=[[tx,ty+tickLen,tz],[tx,ty-tickLen,tz]];
+    else if(axis==='z') tp=[[tx,ty+tickLen,tz],[tx,ty-tickLen,tz]];
+    else tp=[[tx+tickLen,ty,tz],[tx-tickLen,ty,tz]];
+    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(tp.map(p=>new THREE.Vector3(...p))),mat));
+  });
+  const mx=(x1+x2)/2+offX, my=(y1+y2)/2+offY, mz=(z1+z2)/2+offZ;
+  const c=document.createElement('canvas'); c.width=220; c.height=48;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.roundRect(2,2,216,44,7); ctx.fill();
+  ctx.fillStyle='#ffe066'; ctx.font='bold 17px sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(labelText,110,24);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true}));
+  sp.position.set(mx,my,mz); sp.scale.set(1.3,0.29,1); scene.add(sp);
+}
+
+// ════════ COMPONENTS ════════
+
+// ── SERVER RACK  24W×41H×39.5D ──
+const rW=i2f(24),rH=i2f(41),rD=i2f(39.5);
+const rX=-5, rZ=0;
+const rack=box(rW,rH,rD,0x1c2840,rX,rH/2,rZ); wire(rack,0x4488cc,0.8);
+for(let i=0;i<7;i++){
+  const u=box(rW-i2f(4),i2f(4),rD-i2f(4),i%2?0x1a304e:0x223060,rX,i2f(5)+i*i2f(5),rZ);
+  wire(u,0x3366aa,0.3);
+  const led=new THREE.Mesh(new THREE.SphereGeometry(0.03,6,6),new THREE.MeshBasicMaterial({color:i%2?0x00ff99:0x0099ff}));
+  led.position.set(rW/2-0.12,0,0); u.add(led);
+}
+const patchFZ=rZ-rD/2+0.05;
+const patch=box(rW-i2f(2),i2f(3),i2f(2),0x080e18,rX,i2f(2.5),patchFZ); wire(patch,0x4488cc,0.6);
+for(let p=0;p<10;p++) box(i2f(1.4),i2f(1),i2f(1),0x1a2a3a,rX-rW/2+i2f(2)+p*i2f(2.2),i2f(2.5),patchFZ);
+spriteLbl('Server Rack',rX,rH+0.55,rZ);
+
+// ── HVAC  18W×30H×20D  behind rack ──
+const hW=i2f(18),hH=i2f(30),hD=i2f(20);
+const hX=rX, hZ=rZ-rD/2-hD/2-0.2;
+const hvac=box(hW,hH,hD,0x2a1040,hX,hH/2,hZ); wire(hvac,0xaa33cc,0.7);
+for(let v=0;v<4;v++) box(hW-i2f(4),i2f(2),i2f(1),0x1a0a28,hX,i2f(4)+v*i2f(6),hZ+hD/2-0.04);
+spriteLbl('HVAC',hX,hH+0.5,hZ);
+cable([[hX,hH*0.75,hZ+hD/2],[hX,hH*0.6,hZ+hD/2+0.4],[rX,rH*0.75,rZ-rD/2-0.3],[rX,rH*0.75,rZ-rD/2+0.05]],0xcc2222);
+
+// ── POWER CONDITIONERS × 4 ──
+for(let i=0;i<4;i++){
+  const pcX=rX+rW/2+i2f(17)/2+0.15, pcZ=rZ-rD/2+i2f(12)/2+i*(i2f(12)+0.1);
+  const pc=box(i2f(17),i2f(5),i2f(12),0x2a1e06,pcX,i2f(5)/2,pcZ); wire(pc,0xbb7711,0.7);
+  for(let o=0;o<5;o++) box(i2f(1.8),i2f(1.8),i2f(0.5),0x111111,pcX-i2f(8)+o*i2f(3.5),i2f(5)/2,pcZ-i2f(5.8));
+}
+
+// ── TABLE  96W×30H×36D ──
+const tW=8, tH=i2f(30), tD=3;
+const tX=2.5, tZ=0;
+box(tW,i2f(1.5),tD,0x5a3820,tX,tH,tZ);
+[[-tW/2+0.2,-tD/2+0.2],[-tW/2+0.2,tD/2-0.2],[tW/2-0.2,-tD/2+0.2],[tW/2-0.2,tD/2-0.2]]
+  .forEach(([lx,lz])=>box(i2f(2.5),tH,i2f(2.5),0x3a2810,tX+lx,tH/2,tZ+lz));
+
+// ── LAPTOPS × 2 ──
+[-1.8,0.6].forEach(ox=>{
+  const lx=tX+ox,lz=tZ,ly=tH+i2f(1.5);
+  const base=box(i2f(15.4),i2f(0.7),i2f(10.5),0x282828,lx,ly,lz); wire(base,0x777777,0.5);
+  const sg=new THREE.Group();
+  const scr=new THREE.Mesh(new THREE.BoxGeometry(i2f(15.4),i2f(9.5),i2f(0.4)),new THREE.MeshPhongMaterial({color:0x1c1c1c}));
+  const face=new THREE.Mesh(new THREE.BoxGeometry(i2f(13.5),i2f(8),i2f(0.15)),new THREE.MeshBasicMaterial({color:0x0a254e}));
+  face.position.z=i2f(0.2);
+  [0.08,0,-0.08].forEach((dy,k)=>{
+    const gl=new THREE.Mesh(new THREE.BoxGeometry(i2f(9),i2f(0.6),i2f(0.1)),new THREE.MeshBasicMaterial({color:[0x00aaff,0x00ff88,0x3366ff][k]}));
+    gl.position.y=dy; gl.position.z=i2f(0.3); face.add(gl);
+  });
+  sg.add(scr); sg.add(face);
+  sg.position.set(lx,tH+i2f(0.7)+i2f(9.5)/2,lz-i2f(10.5)/2);
+  sg.rotation.x=-0.2; scene.add(sg);
+});
+
+// ── MONITORS × 2 ──
+[-0.5,1.2].forEach(ox=>{
+  const mx=tX+ox,mz=tZ-tD/2+i2f(4),my=tH+i2f(12)+i2f(23.5)/2;
+  box(i2f(8),i2f(1),i2f(6),0x222222,mx,tH+i2f(1),mz);
+  box(i2f(1.5),i2f(11),i2f(1.5),0x222222,mx,tH+i2f(6),mz);
+  const pan=box(i2f(13.2),i2f(23.5),i2f(1.2),0x161616,mx,my,mz); wire(pan,0x336688,0.6);
+  box(i2f(11.5),i2f(21.5),i2f(0.3),0x091c38,mx,my,mz-i2f(0.6));
+  for(let b=0;b<5;b++)
+    box(i2f(1.2),i2f(3+b*2.5),i2f(0.2),[0x0088ff,0x00dd66,0xff5522,0xffaa00,0x7733ff][b],mx-i2f(4)+b*i2f(2),my-i2f(4),mz-i2f(0.7));
+});
+spriteLbl('CC Station',tX,tH+i2f(38),tZ);
+
+// ── OFFICE CHAIR ──
+const chX=tX,chZ=tZ+tD/2+i2f(20)+i2f(10),chSH=i2f(18);
+cyl(0.05,0.05,0.1,0x222233,chX,0.05,chZ);
+for(let a=0;a<5;a++){
+  const ang=a*Math.PI*2/5,ax=chX+Math.sin(ang)*0.55,az=chZ+Math.cos(ang)*0.55;
+  box(i2f(13),i2f(1.5),i2f(2),0x1e1e2e,(chX+ax)/2,i2f(1),(chZ+az)/2);
+  cyl(0.07,0.07,0.15,0x222233,ax,0.08,az,6);
+}
+box(i2f(2),chSH,i2f(2),0x222233,chX,chSH/2,chZ);
+const seat=box(i2f(22),i2f(3),i2f(20),0x182038,chX,chSH,chZ); wire(seat,0x334488,0.6);
+box(i2f(20),i2f(2),i2f(18),0x22304a,chX,chSH+i2f(2.5),chZ);
+[-i2f(12),i2f(12)].forEach(ax=>{
+  box(i2f(3),i2f(10),i2f(2.5),0x1a1e2e,chX+ax,chSH-i2f(3),chZ+i2f(3));
+  box(i2f(3),i2f(2),i2f(14),0x1a1e2e,chX+ax,chSH+i2f(3),chZ+i2f(1));
+});
+const bkG=new THREE.Group();
+const bk=new THREE.Mesh(new THREE.BoxGeometry(i2f(20),i2f(24),i2f(3)),new THREE.MeshPhongMaterial({color:0x182038}));
+const bkc=new THREE.Mesh(new THREE.BoxGeometry(i2f(18),i2f(22),i2f(1.5)),new THREE.MeshPhongMaterial({color:0x22304a}));
+bkc.position.z=i2f(0.5); bkG.add(bk); bkG.add(bkc);
+bkG.position.set(chX,chSH+i2f(14),chZ+i2f(10)); bkG.rotation.x=0.15; scene.add(bkG);
+const hrG=new THREE.Group();
+hrG.add(new THREE.Mesh(new THREE.BoxGeometry(i2f(14),i2f(8),i2f(3)),new THREE.MeshPhongMaterial({color:0x182038})));
+hrG.position.set(chX,chSH+i2f(28),chZ+i2f(12)); hrG.rotation.x=0.15; scene.add(hrG);
+
+// ── STORAGE TOWER  55W×36H×36D  behind chair ──
+const stW=i2f(55),stH=i2f(36),stD=i2f(36);
+const stX=tX, stZ=chZ+i2f(10)+stD/2+0.3;
+const stor=box(stW,stH,stD,0x142014,stX,stH/2,stZ); wire(stor,0x338833,0.6);
+[i2f(10),i2f(22)].forEach(sy=>box(stW-i2f(2),i2f(1.5),stD-i2f(2),0x1e2e1e,stX,sy,stZ));
+const db1=box(i2f(48),i2f(10),i2f(24),0x142814,stX,i2f(17),stZ); wire(db1,0x33ee66,0.9);
+[-0.8,-0.1,0.6].forEach(tx=>box(i2f(18),i2f(0.3),i2f(1.5),0x00aa33,stX+tx,i2f(22.3),stZ));
+[-0.3,0.5].forEach(tz=>box(i2f(1.5),i2f(0.3),i2f(10),0x00aa33,stX+i2f(12),i2f(22.3),stZ+tz));
+box(i2f(4),i2f(2),i2f(4),0x0a0a0a,stX-i2f(8),i2f(22.5),stZ+i2f(4));
+box(i2f(4),i2f(2),i2f(4),0x0a0a0a,stX+i2f(10),i2f(22.5),stZ-i2f(5));
+const db2=box(i2f(48),i2f(10),i2f(24),0x142814,stX,i2f(29),stZ); wire(db2,0x33ee66,0.9);
+[-0.6,0.3,0.9].forEach(tx=>box(i2f(14),i2f(0.3),i2f(1.5),0x00aa33,stX+tx,i2f(34.3),stZ));
+box(i2f(4),i2f(2),i2f(4),0x0a0a0a,stX+i2f(7),i2f(34.5),stZ+i2f(5));
+box(i2f(4),i2f(2),i2f(4),0x0a0a0a,stX-i2f(12),i2f(34.5),stZ-i2f(4));
+spriteLbl('Demo Boards / Tower',stX,stH+0.55,stZ);
+
+// ── RJ45 CABLES — all yellow/amber family ──
+const pZ=rZ-rD/2;
+cable([[rX+i2f(8),i2f(2),pZ],[rX+i2f(20),i2f(2),pZ+0.8],[tX-2.2,i2f(2),tZ+0.3],[tX-1.8,tH+i2f(2),tZ]],0xddbb22);
+cable([[rX+i2f(10),i2f(3),pZ],[rX+i2f(24),i2f(3),pZ+1.0],[tX+0.4,i2f(3),tZ+0.3],[tX+0.6,tH+i2f(2),tZ]],0xee9922);
+cable([[rX+i2f(6),i2f(4),pZ],[tX-2.5,i2f(4),pZ+1.2],[tX-2,i2f(4),tZ+tD/2+0.5],[stX-i2f(14),i2f(8),stZ-stD/2+0.2],[stX-i2f(14),i2f(17),stZ-stD/2]],0xd4a017);
+cable([[rX+i2f(4),i2f(5),pZ],[tX-1.5,i2f(5),pZ+1.4],[tX+0.5,i2f(5),tZ+tD/2+0.5],[stX+i2f(12),i2f(10),stZ-stD/2+0.2],[stX+i2f(12),i2f(29),stZ-stD/2]],0xcc8800);
+
+// ════════════════════════════
+// DIMENSION LINES
+// ════════════════════════════
+const dimY=0.08;
+
+// Overall width
+const leftEdge=rX-rW/2, rightEdge=stX+stW/2;
+dimLine(leftEdge,dimY,stZ+stD/2+0.6, rightEdge,dimY,stZ+stD/2+0.6,
+  `Overall ~${Math.round((rightEdge-leftEdge)*12)}"W`, 0,0.32,0, 'x');
+
+// Overall depth
+const backEdge=hZ-hD/2, frontEdge=stZ+stD/2;
+dimLine(leftEdge-0.55,dimY,backEdge, leftEdge-0.55,dimY,frontEdge,
+  `Overall ~${Math.round((frontEdge-backEdge)*12)}"D`, -0.65,0.32,0, 'z');
+
+// Rack height
+dimLine(rX+rW/2+0.12,0,rZ, rX+rW/2+0.12,rH,rZ, `Rack 41"H`, 0.55,0,0, 'y');
+
+// Storage tower height
+dimLine(stX+stW/2+0.12,0,stZ, stX+stW/2+0.12,stH,stZ, `Tower 36"H`, 0.55,0,0, 'y');
+
+// Table height
+dimLine(tX-tW/2-0.22,0,tZ, tX-tW/2-0.22,tH,tZ, `Table 30"H`, -0.62,0,0, 'y');
+
+// Table width  (96" = 8ft, along X, shown above table surface)
+dimLine(tX-tW/2, tH+i2f(2), tZ-tD/2-0.15,
+        tX+tW/2, tH+i2f(2), tZ-tD/2-0.15,
+        `Table 96"W`, 0,0.28,0, 'x');
+
+// Table depth  (36" = 3ft, along Z, shown to right of table)
+dimLine(tX+tW/2+0.18, tH+i2f(2), tZ-tD/2,
+        tX+tW/2+0.18, tH+i2f(2), tZ+tD/2,
+        `Table 36"D`, 0.62,0.28,0, 'z');
+
+// Rack width
+dimLine(rX-rW/2,rH+0.25,rZ-rD/2-0.1, rX+rW/2,rH+0.25,rZ-rD/2-0.1, `Rack 24"W`, 0,0.28,0, 'x');
+
+// Storage tower width
+dimLine(stX-stW/2,stH+0.25,stZ+stD/2+0.1, stX+stW/2,stH+0.25,stZ+stD/2+0.1, `Tower 55"W`, 0,0.28,0, 'x');
+
+// ── ORBIT CONTROLS ──
+let isDrag=false,prevX=0,prevY=0,rotY=0.3,rotX=0.35,zoom=1,autoRot=true;
+const lookAt=new THREE.Vector3(1,1.5,2);
+el.addEventListener('mousedown',e=>{isDrag=true;prevX=e.clientX;prevY=e.clientY;autoRot=false;});
+el.addEventListener('touchstart',e=>{isDrag=true;prevX=e.touches[0].clientX;prevY=e.touches[0].clientY;autoRot=false;},{passive:true});
+window.addEventListener('mouseup',()=>isDrag=false);
+window.addEventListener('touchend',()=>isDrag=false);
+window.addEventListener('mousemove',e=>{if(!isDrag)return;rotY+=(e.clientX-prevX)*0.007;rotX+=(e.clientY-prevY)*0.007;rotX=Math.max(-0.4,Math.min(1.0,rotX));prevX=e.clientX;prevY=e.clientY;});
+window.addEventListener('touchmove',e=>{if(!isDrag)return;rotY+=(e.touches[0].clientX-prevX)*0.007;rotX+=(e.touches[0].clientY-prevY)*0.007;rotX=Math.max(-0.4,Math.min(1.0,rotX));prevX=e.touches[0].clientX;prevY=e.touches[0].clientY;},{passive:true});
+el.addEventListener('wheel',e=>{zoom*=1+e.deltaY*0.001;zoom=Math.max(0.4,Math.min(3,zoom));e.preventDefault();},{passive:false});
+
+function animate(){
+  requestAnimationFrame(animate);
+  if(autoRot) rotY+=0.003;
+  const r=14*zoom;
+  camera.position.set(lookAt.x+r*Math.sin(rotY)*Math.cos(rotX),lookAt.y+r*Math.sin(rotX)+1,lookAt.z+r*Math.cos(rotY)*Math.cos(rotX));
+  camera.lookAt(lookAt);
+  renderer.render(scene,camera);
+}
+animate();
+
+window.addEventListener('resize',()=>{
+  const nw=el.parentElement.clientWidth,nh=el.parentElement.clientHeight;
+  renderer.setSize(nw,nh);camera.aspect=nw/nh;camera.updateProjectionMatrix();
+});
+})();
+</script>

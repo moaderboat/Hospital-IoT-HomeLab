@@ -1,0 +1,24 @@
+﻿=== laptop_static_test 2026-11-06 12:52:25
+Link: Up 1 Gbps
+
+--- VLAN 30: laptop = 10.30.0.30/24 (address state: Preferred)
+10.30.0.1       ping=True  tcp443=True
+10.30.0.44      ping=True  tcp80=True
+10.30.0.52      ping=True  tcp1880=True
+10.30.0.51      ping=True  tcp1883=True
+ARP on the wired port:
+  10.30.0.1             6c-63-f8-67-c9-2f     dynamic
+  10.30.0.44            0e-75-e3-da-c8-33     dynamic
+  10.30.0.51            00-a0-98-03-44-bc     dynamic
+  10.30.0.52            00-a0-98-0d-60-57     dynamic
+
+--- Default network: laptop = 192.168.0.30/24 (address state: Preferred)
+192.168.0.1     ping=False tcp443=False
+192.168.0.130   ping=False tcp443=False
+ARP on the wired port:
+  10.30.0.1             6c-63-f8-67-c9-2f     dynamic
+  10.30.0.44            0e-75-e3-da-c8-33     dynamic
+  10.30.0.51            00-a0-98-03-44-bc     dynamic
+  10.30.0.52            00-a0-98-0d-60-57     dynamic
+
+Adapter 'Ethernet' set back to DHCP.

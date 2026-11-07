@@ -1,0 +1,228 @@
+[
+    {
+        "id": "tab_vulnerable",
+        "type": "tab",
+        "label": "Vulnerable Pi #7",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "ui_group_pressure",
+        "type": "ui-group",
+        "name": "Pressure",
+        "page": "ui_page_main",
+        "width": 6,
+        "height": 1,
+        "order": 1
+    },
+    {
+        "id": "ui_group_relays",
+        "type": "ui-group",
+        "name": "Relay States",
+        "page": "ui_page_main",
+        "width": 6,
+        "height": 1,
+        "order": 2
+    },
+    {
+        "id": "ui_group_sensor",
+        "type": "ui-group",
+        "name": "Sensor Feed",
+        "page": "ui_page_main",
+        "width": 12,
+        "height": 1,
+        "order": 3
+    },
+    {
+        "id": "ui_page_main",
+        "type": "ui-page",
+        "name": "Balloon Control",
+        "ui": "ui_base",
+        "path": "/dashboard",
+        "layout": "grid",
+        "theme": "ui_theme"
+    },
+    {
+        "id": "ui_base",
+        "type": "ui-base",
+        "acceptsThemeInjection": true,
+        "showPathInSidebar": false
+    },
+    {
+        "id": "ui_theme",
+        "type": "ui-theme",
+        "name": "Vulnerable Theme",
+        "colors": {
+            "surface": "#1a1a1a",
+            "primary": "#cc0000",
+            "bgPage": "#111111",
+            "groupBg": "#1e1e1e",
+            "groupOutline": "#cc0000"
+        }
+    },
+    {
+        "id": "inject_poll",
+        "type": "inject",
+        "z": "tab_vulnerable",
+        "name": "Poll every 500ms",
+        "props": [],
+        "repeat": "0.5",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "0.5",
+        "topic": "",
+        "x": 140,
+        "y": 80,
+        "wires": [["http_get_status"]]
+    },
+    {
+        "id": "http_get_status",
+        "type": "http request",
+        "z": "tab_vulnerable",
+        "name": "GET /status",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://localhost:5000/status",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "x": 340,
+        "y": 80,
+        "wires": [["parse_status"]]
+    },
+    {
+        "id": "parse_status",
+        "type": "function",
+        "z": "tab_vulnerable",
+        "name": "Parse Status",
+        "func": "var d = msg.payload;\n\n// Pressure\nflow.set('pressure', d.pressure_psi || 0);\nflow.set('pump', d.pump_running || false);\nflow.set('inflate', d.inflate_valve_open || false);\nflow.set('vent', d.vent_valve_open || false);\nflow.set('relief', d.relief_valve_open || false);\nflow.set('emergency', d.emergency_stop || false);\nflow.set('source', d.last_sensor_source || 'unknown');\nflow.set('sensor_count', d.sensor_read_count || 0);\nflow.set('target', d.target_pressure || 2.5);\nflow.set('max_safe', d.max_safe_pressure || 3.5);\n\nreturn msg;",
+        "outputs": 1,
+        "x": 540,
+        "y": 80,
+        "wires": [["route_pressure", "route_relays", "route_sensor_feed", "route_status_text"]]
+    },
+    {
+        "id": "route_pressure",
+        "type": "function",
+        "z": "tab_vulnerable",
+        "name": "Pressure Gauge",
+        "func": "msg.payload = msg.payload.pressure_psi || 0;\nreturn msg;",
+        "outputs": 1,
+        "x": 760,
+        "y": 40,
+        "wires": [["gauge_psi"]]
+    },
+    {
+        "id": "gauge_psi",
+        "type": "ui-gauge",
+        "z": "tab_vulnerable",
+        "name": "PSI Gauge",
+        "group": "ui_group_pressure",
+        "order": 1,
+        "width": 6,
+        "height": 4,
+        "gtype": "gauge",
+        "title": "Balloon Pressure",
+        "label": "PSI",
+        "format": "{{ msg.payload }}",
+        "min": 0,
+        "max": 15,
+        "segments": [
+            {"from": 0, "color": "#00cc00"},
+            {"from": 2.5, "color": "#ffcc00"},
+            {"from": 3.5, "color": "#cc0000"}
+        ],
+        "x": 960,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "route_relays",
+        "type": "function",
+        "z": "tab_vulnerable",
+        "name": "Build Relay Text",
+        "func": "var d = msg.payload;\nvar pump    = d.pump_running        ? '🟢 ON' : '⚫ OFF';\nvar inflate = d.inflate_valve_open  ? '🟢 ON' : '⚫ OFF';\nvar vent    = d.vent_valve_open     ? '🟢 ON' : '⚫ OFF';\nvar relief  = d.relief_valve_open   ? '🔴 ON' : '⚫ OFF';\n\nmsg.payload = [\n    { label: 'Relay 1 — PUMP',            value: pump },\n    { label: 'Relay 2 — INFLATE (Sol #1)', value: inflate },\n    { label: 'Relay 3 — VENT (Sol #2)',    value: vent },\n    { label: 'Relay 4 — RELIEF (Sol #3)',  value: relief }\n];\nreturn msg;",
+        "outputs": 1,
+        "x": 760,
+        "y": 100,
+        "wires": [["relay_table"]]
+    },
+    {
+        "id": "relay_table",
+        "type": "ui-table",
+        "z": "tab_vulnerable",
+        "name": "Relay States Table",
+        "group": "ui_group_relays",
+        "order": 1,
+        "width": 6,
+        "height": 4,
+        "title": "Relay States",
+        "columns": [
+            {"title": "Relay", "key": "label"},
+            {"title": "State", "key": "value"}
+        ],
+        "x": 960,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "route_sensor_feed",
+        "type": "function",
+        "z": "tab_vulnerable",
+        "name": "Build Sensor Feed",
+        "func": "var d = msg.payload;\nvar ts = new Date().toLocaleTimeString();\nmsg.payload = ts + '  |  ' +\n    (d.pressure_psi || 0).toFixed(4) + ' PSI' +\n    '  |  source: ' + (d.last_sensor_source || 'unknown');\nreturn msg;",
+        "outputs": 1,
+        "x": 760,
+        "y": 160,
+        "wires": [["sensor_log"]]
+    },
+    {
+        "id": "sensor_log",
+        "type": "ui-text",
+        "z": "tab_vulnerable",
+        "name": "Sensor Feed Log",
+        "group": "ui_group_sensor",
+        "order": 1,
+        "width": 12,
+        "height": 1,
+        "topic": "sensor_feed",
+        "label": "Last Sensor Reading",
+        "format": "{{ msg.payload }}",
+        "style": false,
+        "x": 960,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "route_status_text",
+        "type": "function",
+        "z": "tab_vulnerable",
+        "name": "System Status Text",
+        "func": "var d = msg.payload;\nvar status = 'NORMAL';\nif (d.emergency_stop) status = 'EMERGENCY STOP';\nelse if (d.pressure_psi >= d.max_safe_pressure) status = 'OVER PRESSURE';\nelse if (d.pressure_psi >= d.warning_pressure) status = 'WARNING';\nelse if (d.pump_running) status = 'INFLATING';\nelse if (d.vent_valve_open) status = 'VENTING';\nmsg.payload = status;\nreturn msg;",
+        "outputs": 1,
+        "x": 760,
+        "y": 220,
+        "wires": [["status_text"]]
+        },
+    {
+        "id": "status_text",
+        "type": "ui-text",
+        "z": "tab_vulnerable",
+        "name": "System Status",
+        "group": "ui_group_pressure",
+        "order": 2,
+        "width": 6,
+        "height": 1,
+        "title": "System Status",
+        "format": "{{msg.payload}}",
+        "style": true,
+        "font": "bold",
+        "fontSize": 24,
+        "color": "#cc0000",
+        "x": 960,
+        "y": 220,
+        "wires": []
+    }
+]

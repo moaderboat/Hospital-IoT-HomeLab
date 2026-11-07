@@ -1,0 +1,24 @@
+# Text files pass through the local "redact" clean filter, which replaces lab
+# credentials and usernames with "password" / "username" in the published copy.
+*.md       filter=redact
+*.txt      filter=redact
+*.py       filter=redact
+*.js       filter=redact
+*.json     filter=redact
+*.html     filter=redact
+*.htm      filter=redact
+*.css      filter=redact
+*.yml      filter=redact
+*.yaml     filter=redact
+*.cfg      filter=redact
+*.conf     filter=redact
+*.ini      filter=redact
+*.service  filter=redact
+*.sh       filter=redact
+*.ps1      filter=redact
+*.csv      filter=redact
+*.xml      filter=redact
+*.mmd      filter=redact
+*.drawio   filter=redact
+*.env      filter=redact
+*.backup-* filter=redact

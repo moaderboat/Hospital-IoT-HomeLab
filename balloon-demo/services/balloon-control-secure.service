@@ -1,0 +1,26 @@
+[Unit]
+Description=Balloon Demo - Secure Control System (Pi #6)
+After=network-online.target syslog.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=username
+WorkingDirectory=/home/username/balloon-demo/scripts
+ExecStart=/usr/bin/python3 /home/username/balloon-demo/scripts/balloon_control_secure.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+
+# Security hardening (this is the secure system)
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Resource limits
+LimitNOFILE=1024
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target

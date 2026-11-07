@@ -1,0 +1,84 @@
+<mxfile host="app.diagrams.net">
+</mxCell>
+<mxCell id="siem" value="SIEM (Wazuh)" style="rectangle;whiteSpace=wrap;" vertex="1" parent="vlan30">
+<mxGeometry width="200" height="60" as="geometry" />
+</mxCell>
+<mxCell id="ids" value="IDS (Zeek/Suricata)" style="rectangle;whiteSpace=wrap;" vertex="1" parent="vlan30">
+<mxGeometry width="200" height="60" as="geometry" />
+</mxCell>
+<mxCell id="idp" value="Keycloak IdP" style="rectangle;whiteSpace=wrap;" vertex="1" parent="vlan30">
+<mxGeometry width="200" height="60" as="geometry" />
+</mxCell>
+<mxCell id="mon" value="Grafana/Prometheus" style="rectangle;whiteSpace=wrap;" vertex="1" parent="vlan30">
+<mxGeometry width="200" height="60" as="geometry" />
+</mxCell>
+<mxCell id="truenas" value="TrueNAS Core" style="rectangle;whiteSpace=wrap;" vertex="1" parent="vlan30">
+<mxGeometry width="200" height="60" as="geometry" />
+</mxCell>
+
+
+<mxCell id="vlan40" value="VLAN 40 Guest" style="swimlane;fillColor=#fff7e6;" vertex="1" parent="1">
+<mxGeometry x="600" y="550" width="220" height="120" as="geometry" />
+</mxCell>
+<mxCell id="guest" value="Guest Clients" style="ellipse;whiteSpace=wrap;" vertex="1" parent="vlan40">
+<mxGeometry width="180" height="60" as="geometry" />
+</mxCell>
+
+
+<mxCell id="vlan50" value="VLAN 50 Attackers" style="swimlane;fillColor=#ffe6e6;" vertex="1" parent="1">
+<mxGeometry x="900" y="450" width="220" height="120" as="geometry" />
+</mxCell>
+<mxCell id="k1" value="KaliAttacker1 VM" style="ellipse;fillColor=#ffcccc;" vertex="1" parent="vlan50">
+<mxGeometry width="180" height="60" as="geometry" />
+</mxCell>
+<mxCell id="k2" value="KaliAttacker2 VM" style="ellipse;fillColor=#ffcccc;" vertex="1" parent="vlan50">
+<mxGeometry width="180" height="60" as="geometry" />
+</mxCell>
+
+
+<!-- VPN/Admin -->
+<mxCell id="vpn" value="WireGuard VPN" style="ellipse;whiteSpace=wrap;" vertex="1" parent="1">
+<mxGeometry x="1200" y="550" width="140" height="60" as="geometry" />
+</mxCell>
+<mxCell id="admin" value="Admin Laptop" style="ellipse;whiteSpace=wrap;" vertex="1" parent="1">
+<mxGeometry x="1400" y="550" width="140" height="60" as="geometry" />
+</mxCell>
+
+
+<!-- Example Connections -->
+<mxCell id="edge1" value="WAN" style="endArrow=block;" edge="1" source="udm" target="ont" parent="1">
+<mxGeometry relative="1" as="geometry" />
+</mxCell>
+<mxCell id="edge2" value="Provider" style="endArrow=block;" edge="1" source="ont" target="wan" parent="1">
+<mxGeometry relative="1" as="geometry" />
+</mxCell>
+
+
+<mxCell id="edge3" value="10GbE SFP+" style="endArrow=block;" edge="1" source="srv" target="sw" parent="1">
+<mxGeometry relative="1" as="geometry" />
+</mxCell>
+<mxCell id="edge4" value="Mgmt 1GbE" style="endArrow=block;" edge="1" source="srv" target="sw" parent="1">
+<mxGeometry relative="1" as="geometry" />
+</mxCell>
+
+
+<mxCell id="edge5" value="PoE++ 2.5GbE" style="endArrow=block;" edge="1" source="ap" target="sw" parent="1">
+<mxGeometry relative="1" as="geometry" />
+</mxCell>
+<mxCell id="edge6" value="PoE+" style="endArrow=block;" edge="1" source="pis" target="sw" parent="1">
+<mxGeometry relative="1" as="geometry" />
+</mxCell>
+
+
+<mxCell id="edge7" value="ACL: VLAN50 → VLAN10/20 allowed, VLAN30 denied" style="dashed=1;" edge="1" source="vlan50" target="vlan10" parent="1">
+<mxGeometry relative="1" as="geometry" />
+</mxCell>
+<mxCell id="edge8" value="ACL: Guest → WAN only" style="dashed=1;" edge="1" source="vlan40" target="wan" parent="1">
+<mxGeometry relative="1" as="geometry" />
+</mxCell>
+
+
+</root>
+</mxGraphModel>
+</diagram>
+</mxfile>

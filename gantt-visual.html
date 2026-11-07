@@ -1,0 +1,89 @@
+<style>
+.gantt-container { width: 100%; overflow-x: auto; margin: 20px 0; font-family: Arial, sans-serif; }
+.gantt-table { width: 100%; border-collapse: collapse; font-size: 9pt; table-layout: fixed; }
+.gantt-table th { background-color: #2c3e50; color: white; padding: 6px 4px; text-align: center; border: 1px solid #34495e; font-weight: bold; font-size: 9pt; }
+.gantt-table th.task-col { text-align: left; width: 32%; }
+.gantt-table th.month-col { width: 8%; }
+.gantt-table th.status-col { width: 12%; }
+.gantt-table td { padding: 4px; border: 1px solid #ddd; vertical-align: middle; font-size: 8.5pt; }
+.gantt-table td.task-name { font-weight: 500; background-color: #f8f9fa; text-align: left; }
+.gantt-table td.task-name.phase { font-weight: bold; background-color: #e9ecef; padding-left: 4px; }
+.gantt-table td.task-name.subtask { padding-left: 16px; font-size: 8pt; }
+.gantt-table td.timeline-cell { background-color: white; position: relative; text-align: center; padding: 2px; }
+.gantt-bar { display: inline-block; height: 18px; border-radius: 3px; text-align: center; color: white; font-size: 12px; line-height: 18px; font-weight: bold; width: 100%; }
+.gantt-bar.phase-0 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.gantt-bar.phase-1 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.gantt-bar.phase-2 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+.gantt-bar.phase-3 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+.gantt-bar.phase-4 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+.gantt-bar.phase-5 { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
+.gantt-status { text-align: center; font-weight: bold; color: #27ae60; font-size: 8pt; }
+.gantt-legend { margin-top: 20px; padding: 12px; background-color: #f8f9fa; border-left: 4px solid #2c3e50; font-size: 8pt; }
+.gantt-legend-title { font-weight: bold; margin-bottom: 8px; font-size: 9pt; }
+.gantt-legend-item { display: inline-block; margin-right: 15px; margin-bottom: 5px; }
+.gantt-legend-color { display: inline-block; width: 25px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+@media print {
+.gantt-container { page-break-inside: avoid; }
+.gantt-table { font-size: 7.5pt; }
+.gantt-table td { padding: 3px; }
+.gantt-table td.task-name.subtask { font-size: 7pt; }
+.gantt-bar { height: 14px; line-height: 14px; font-size: 10px; }
+.gantt-status { font-size: 7pt; }
+}
+</style>
+
+<div class="gantt-container">
+<h3>Project Timeline: September 2025 - March 2026 (28 Weeks)</h3>
+<table class="gantt-table">
+<thead>
+<tr>
+<th class="task-col">Phase / Task</th>
+<th class="month-col">Sep '25</th>
+<th class="month-col">Oct '25</th>
+<th class="month-col">Nov '25</th>
+<th class="month-col">Dec '25</th>
+<th class="month-col">Jan '26</th>
+<th class="month-col">Feb '26</th>
+<th class="month-col">Mar '26</th>
+<th class="status-col">Status</th>
+</tr>
+</thead>
+<tbody>
+<tr><td class="task-name phase">Phase 0: Planning</td><td class="timeline-cell"><div class="gantt-bar phase-0">✓</div></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="gantt-status">✓ Complete</td></tr>
+<tr><td class="task-name subtask">Preliminary Proposal</td><td class="timeline-cell"><div class="gantt-bar phase-0">✓</div></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="gantt-status">✓</td></tr>
+<tr><td class="task-name phase">Phase 1: Core Infrastructure</td><td class="timeline-cell"><div class="gantt-bar phase-1">✓</div></td><td class="timeline-cell"><div class="gantt-bar phase-1">✓</div></td><td class="timeline-cell"><div class="gantt-bar phase-1">✓</div></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="gantt-status">✓ Complete</td></tr>
+<tr><td class="task-name subtask">Hardware Installation</td><td class="timeline-cell"><div class="gantt-bar phase-1">✓</div></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="gantt-status">✓</td></tr>
+<tr><td class="task-name subtask">TrueNAS Configuration</td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-1">✓</div></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="gantt-status">✓</td></tr>
+<tr><td class="task-name subtask">Raspberry Pi Deployment</td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-1">✓</div></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="gantt-status">✓</td></tr>
+<tr><td class="task-name subtask">Node-RED & MQTT Pipeline</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-1">✓</div></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="gantt-status">✓</td></tr>
+<tr><td class="task-name phase">Phase 2: Data & Visualization</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-2">✓</div></td><td class="timeline-cell"><div class="gantt-bar phase-2">✓</div></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="gantt-status">✓ Complete</td></tr>
+<tr><td class="task-name subtask">PostgreSQL Database (933M rows)</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-2">✓</div></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="gantt-status">✓</td></tr>
+<tr><td class="task-name subtask">Grafana Dashboards</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-2">✓</div></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="gantt-status">✓</td></tr>
+<tr><td class="task-name subtask">Mirth Connect FHIR Pipeline</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-2">✓</div></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="gantt-status">✓</td></tr>
+<tr><td class="task-name subtask">HAPI FHIR Integration</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-2">✓</div></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="gantt-status">✓</td></tr>
+<tr><td class="task-name phase">Phase 3: Security Infrastructure</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-3">✓</div></td><td class="timeline-cell"><div class="gantt-bar phase-3">✓</div></td><td class="timeline-cell"></td><td class="gantt-status">✓ Complete</td></tr>
+<tr><td class="task-name subtask">Keycloak SSO</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-3">✓</div></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="gantt-status">✓</td></tr>
+<tr><td class="task-name subtask">HashiCorp Vault</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-3">✓</div></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="gantt-status">✓</td></tr>
+<tr><td class="task-name subtask">Wazuh SIEM (14 agents)</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-3">✓</div></td><td class="timeline-cell"><div class="gantt-bar phase-3">✓</div></td><td class="timeline-cell"></td><td class="gantt-status">✓</td></tr>
+<tr><td class="task-name subtask">Suricata IDS + Elasticsearch</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-3">✓</div></td><td class="timeline-cell"></td><td class="gantt-status">✓</td></tr>
+<tr><td class="task-name subtask">VLAN Segmentation (2+30)</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-3">✓</div></td><td class="timeline-cell"></td><td class="gantt-status">✓</td></tr>
+<tr><td class="task-name phase">Phase 4: Attack Demonstration</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-4">✓</div></td><td class="gantt-status">✓ Complete</td></tr>
+<tr><td class="task-name subtask">Balloon Demo Hardware</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-4">✓</div></td><td class="gantt-status">✓</td></tr>
+<tr><td class="task-name subtask">Vulnerable vs Secure Systems</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-4">✓</div></td><td class="gantt-status">✓</td></tr>
+<tr><td class="task-name subtask">Attack Testing (Mar 23, 2026)</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-4">✓</div></td><td class="gantt-status">✓</td></tr>
+<tr><td class="task-name phase">Phase 5: System Verification</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-5">✓</div></td><td class="gantt-status">✓ Complete</td></tr>
+<tr><td class="task-name subtask">Full Cold Start Test (Mar 24-25)</td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"></td><td class="timeline-cell"><div class="gantt-bar phase-5">✓</div></td><td class="gantt-status">✓</td></tr>
+</tbody>
+</table>
+<div class="gantt-legend">
+<div class="gantt-legend-title">Legend:</div>
+<div class="gantt-legend-item"><span class="gantt-legend-color phase-0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></span> Phase 0: Planning</div>
+<div class="gantt-legend-item"><span class="gantt-legend-color phase-1" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></span> Phase 1: Core Infrastructure</div>
+<div class="gantt-legend-item"><span class="gantt-legend-color phase-2" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></span> Phase 2: Data & Visualization</div>
+<div class="gantt-legend-item"><span class="gantt-legend-color phase-3" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);"></span> Phase 3: Security Infrastructure</div>
+<div class="gantt-legend-item"><span class="gantt-legend-color phase-4" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"></span> Phase 4: Attack Demo</div>
+<div class="gantt-legend-item"><span class="gantt-legend-color phase-5" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);"></span> Phase 5: Verification</div>
+<br>
+<div style="margin-top: 10px;"><strong>Timeline:</strong> September 2025 - March 2026 (28 weeks total)<br><strong>Status:</strong> All phases complete as of March 2026</div>
+</div>
+</div>

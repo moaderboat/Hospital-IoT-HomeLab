@@ -1,0 +1,144 @@
+<!--
+  Node-RED Dashboard (1.x) ui_template: live sweeping ECG monitor.
+  Input: msg.payload = BPM (number), or an object with a .bpm field.
+  The browser draws the waveform at 60 fps; Node-RED only supplies the rate.
+  Same code for every Pi: label and AFib mode come from msg.payload.pi_id / anomaly_type.
+-->
+<div class="ecg-box">
+  <canvas id="ecg-{{$id}}"></canvas>
+  <div class="ecg-label" id="ecg-label-{{$id}}"></div>
+  <div class="ecg-bpm" id="ecg-bpm-{{$id}}">--</div>
+</div>
+
+<style>
+  .ecg-box { position: relative; width: 100%; height: 100%; background: #000; border-radius: 4px; overflow: hidden; }
+  .ecg-box canvas { width: 100%; height: 100%; display: block; }
+  .ecg-label { position: absolute; top: 4px; left: 8px; font: bold 14px monospace; color: #9f9; }
+  .ecg-bpm { position: absolute; top: 2px; right: 10px; font: bold 32px monospace; color: #0f0; }
+</style>
+
+<script>
+(function (scope) {
+  // ---- settings (label and AFib mode are set automatically from msg.payload) ----
+  var AFIB = false;          // irregular waveform when the payload's anomaly_type is "afib" (Pi #4)
+  var TACHY_BPM = 120;       // trace turns red while BPM is above this, green again at or below
+  var NORMAL_COLOR = '#00ff00', ALARM_COLOR = '#ff3b3b';
+  var COLOR = NORMAL_COLOR;
+  var LABEL = 'ECG';         // replaced by "Pi #<pi_id>" on the first message
+  var SWEEP_SECONDS = 5;     // seconds across the screen
+  // -------------------------
+
+  var STALE_MS = 3000;       // flatline if no MQTT data for this long
+
+  var bpm = 0, beatDur = 1, phase = 0, lastMsgAt = 0;   // bpm comes only from incoming messages
+  var x = 0, lastY = null, lastT = null, running = true;
+  var canvas, ctx, label, bpmEl, W, H;
+
+  // Sum of Gaussians -> P, Q, R, S, T. t is position within the beat (0..1).
+  function g(t, c, w, a) { var d = (t - c) / w; return a * Math.exp(-d * d); }
+  function ecg(t) {
+    var p = AFIB ? 0 : g(t, 0.10, 0.025, 0.12);
+    return p + g(t, 0.215, 0.008, -0.12) + g(t, 0.24, 0.010, 1.0) +
+           g(t, 0.265, 0.010, -0.28) + g(t, 0.45, 0.045, 0.30);
+  }
+
+  function nextBeat() {
+    beatDur = 60 / Math.max(30, Math.min(220, bpm));
+    if (AFIB) beatDur *= 0.7 + Math.random() * 0.6;   // irregular R-R
+  }
+
+  function drawGrid() {
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+    var step = W / (SWEEP_SECONDS * 5);               // 0.2 s boxes
+    ctx.strokeStyle = 'rgba(0,120,0,0.25)'; ctx.lineWidth = 1;
+    for (var gx = 0; gx < W; gx += step) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
+    for (var gy = 0; gy < H; gy += step) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
+  }
+
+  function resize() {
+    var r = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, r.width * dpr); canvas.height = Math.max(1, r.height * dpr);
+    W = canvas.width; H = canvas.height; x = 0; lastY = null;
+    drawGrid();
+  }
+
+  function yOf(v) { return H * 0.72 - v * H * 0.6; }   // baseline low, R peak near top
+
+  function frame(now) {
+    if (!running) return;
+    if (lastT === null) lastT = now;
+    var dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+    var pxPerSec = W / SWEEP_SECONDS, px = dt * pxPerSec, secPerPx = 1 / pxPerSec;
+
+    ctx.strokeStyle = COLOR; ctx.lineWidth = Math.max(2, W / 500);
+    ctx.shadowColor = COLOR; ctx.shadowBlur = 6;
+    var live = bpm > 0 && (Date.now() - lastMsgAt) < STALE_MS;
+    if (!live && bpmEl) bpmEl.textContent = '--';
+    var SUB = 8;                                       // sub-samples per pixel so narrow QRS spikes are never skipped
+    for (var i = 0; i < px; i++) {
+      var y, yMin = Infinity, yMax = -Infinity;
+      for (var s = 0; s < SUB; s++) {
+        var v;
+        if (live) {
+          phase += secPerPx / SUB / beatDur;
+          if (phase >= 1) { phase -= 1; nextBeat(); }
+          v = ecg(phase);
+          if (AFIB) v += 0.03 * Math.sin(now / 1000 * 2 * Math.PI * 6 + i);  // fibrillatory baseline
+        } else {
+          v = 0;                                       // flatline: no data from the Pi
+        }
+        y = yOf(v);
+        if (y < yMin) yMin = y;
+        if (y > yMax) yMax = y;
+      }
+      var noise = (Math.random() - 0.5) * (live ? (AFIB ? 0.05 : 0.02) : 0.01) * H * 0.6;
+      y += noise; yMin += noise; yMax += noise;
+      if (lastY !== null && x > 0) {
+        ctx.beginPath(); ctx.moveTo(x - 1, lastY);
+        ctx.lineTo(x, yMin); ctx.lineTo(x, yMax); ctx.lineTo(x, y);  // full vertical extent of this pixel
+        ctx.stroke();
+      }
+      lastY = y; x += 1;
+      if (x >= W) { x = 0; lastY = null; }
+      // erase bar just ahead of the trace
+      ctx.save(); ctx.shadowBlur = 0; ctx.fillStyle = '#000';
+      ctx.fillRect(x, 0, W / 60, H);
+      ctx.restore();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  setTimeout(function () {
+    canvas = document.getElementById('ecg-' + scope.$id);
+    label = document.getElementById('ecg-label-' + scope.$id);
+    bpmEl = document.getElementById('ecg-bpm-' + scope.$id);
+    if (!canvas) return;
+    ctx = canvas.getContext('2d');
+    label.textContent = LABEL; bpmEl.style.color = COLOR;
+    resize();
+    window.addEventListener('resize', resize);
+    requestAnimationFrame(frame);
+  }, 0);
+
+  scope.$watch('msg', function (msg) {
+    if (!msg) return;
+    var p = msg.payload;
+    if (p && typeof p === 'object') {
+      // Self-configure from the Pi's own payload, so one template works for every Pi
+      if (p.pi_id && label) label.textContent = 'Pi #' + p.pi_id;
+      AFIB = p.anomaly_type === 'afib';                // AFib shapes the waveform only
+    }
+    var v = (p && typeof p === 'object') ? p.bpm : p;
+    v = Number(v);
+    if (!isNaN(v) && v > 0) {
+      var first = bpm === 0;
+      bpm = v; lastMsgAt = Date.now();
+      if (first) nextBeat();
+      COLOR = bpm > TACHY_BPM ? ALARM_COLOR : NORMAL_COLOR;   // red only while above threshold
+      if (bpmEl) { bpmEl.textContent = Math.round(v); bpmEl.style.color = COLOR; }
+    }
+  });
+
+  scope.$on('$destroy', function () { running = false; window.removeEventListener('resize', resize); });
+})(scope);
+</script>
