@@ -1,0 +1,21 @@
+[Unit]
+Description=Balloon Demo - Sensor Publisher (Secure System)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=username
+WorkingDirectory=/home/username/balloon-demo/scripts
+ExecStart=/usr/bin/python3 /home/username/balloon-demo/scripts/sensor_publisher_secure.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+
+# Security settings
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

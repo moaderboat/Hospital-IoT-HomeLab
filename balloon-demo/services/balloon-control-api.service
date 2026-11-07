@@ -1,0 +1,23 @@
+[Unit]
+Description=Balloon Demo - Control API (Vulnerable System)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=username
+WorkingDirectory=/home/username/balloon-demo/scripts
+ExecStart=/usr/bin/python3 /home/username/balloon-demo/scripts/balloon_control_api_vulnerable.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Security settings (minimal - this is the vulnerable system)
+NoNewPrivileges=true
+
+# Environment
+Environment="FLASK_ENV=production"
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,17 @@
+[Unit]
+Description=OAuth2 Proxy for HAPI FHIR
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=username
+Group=username
+ExecStart=/usr/local/bin/oauth2-proxy --config=/etc/oauth2-proxy/oauth2-proxy.cfg
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

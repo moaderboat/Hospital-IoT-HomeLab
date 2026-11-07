@@ -1,0 +1,104 @@
+Phase,Task ID,Task Name,Start Date,End Date,Duration (Days),Status,% Complete,Owner,Dependencies,Notes
+Phase 0: Planning,0.1,Project Ideation & Topic Selection,2025-08-26,2025-09-08,14,Complete,100%,David Moad,,Initial concept development
+Phase 0: Planning,0.2,Preliminary Proposal Writing,2025-09-09,2025-09-22,14,Complete,100%,David Moad,0.1,Budget and objectives defined
+Phase 0: Planning,0.3,Preliminary Proposal Submission,2025-09-23,2025-09-23,1,Complete,100%,David Moad,0.2,Submitted to instructor
+Phase 1: Core Infrastructure,1.1,Equipment Procurement,2025-09-16,2025-09-30,15,Complete,100%,David Moad,0.2,"Dell R740XD, HDDs, SSDs, UniFi gear, Raspberry Pis purchased"
+Phase 1: Core Infrastructure,1.2,Server Hardware Installation,2025-10-01,2025-10-07,7,Complete,100%,David Moad,1.1,Dell R740XD rack mounted; drives installed
+Phase 1: Core Infrastructure,1.3,TrueNAS SCALE Installation,2025-10-08,2025-10-14,7,Complete,100%,David Moad,1.2,OS installed; initial config
+Phase 1: Core Infrastructure,1.4,Storage Pool Creation (RAID-Z2),2025-10-15,2025-10-21,7,Complete,100%,David Moad,1.3,Hospital_Main pool created; 64TB usable
+Phase 1: Core Infrastructure,1.5,Dataset Creation & Encryption,2025-10-22,2025-10-28,7,Complete,100%,David Moad,1.4,5 datasets created; AES-256 encryption enabled
+Phase 1: Core Infrastructure,1.6,Network Infrastructure Setup,2025-10-01,2025-10-14,14,Complete,100%,David Moad,1.1,UDM-SE and Switch configured
+Phase 1: Core Infrastructure,1.7,VLAN 30 Configuration,2025-10-15,2025-10-21,7,Complete,100%,David Moad,1.6,Flat network (10.30.0.0/24) operational
+Phase 1: Core Infrastructure,1.8,iDRAC 9 Configuration,2025-10-22,2025-10-23,2,Complete,100%,David Moad,1.7,Remote management enabled (10.30.0.45)
+Phase 1: Core Infrastructure,1.9,WiFi AP Deployment,2025-10-24,2025-10-25,2,Complete,100%,David Moad,1.7,U6 Pro configured (10.30.0.246)
+Phase 1: Core Infrastructure,1.10,Raspberry Pi OS Installation (x4),2025-10-29,2025-11-04,7,Complete,100%,David Moad,1.5,Raspberry Pi OS flashed to SD cards
+Phase 1: Core Infrastructure,1.11,Raspberry Pi Network Configuration,2025-11-05,2025-11-08,4,Complete,100%,David Moad,1.10,Static IPs assigned (10.30.0.20-23)
+Phase 1: Core Infrastructure,1.12,HeartRate Script Development,2025-11-01,2025-11-07,7,Complete,100%,David Moad,,"Python scripts for 4 sensors (3 normal, 1 AFib)"
+Phase 1: Core Infrastructure,1.13,HeartRate Script Deployment,2025-11-09,2025-11-09,1,Complete,100%,David Moad,"1.11,1.12",Scripts copied to Raspberry Pis
+Phase 1: Core Infrastructure,1.14,Systemd Service Creation,2025-11-10,2025-11-11,2,Complete,100%,David Moad,1.13,Auto-start services configured
+Phase 1: Core Infrastructure,1.15,8-Day Sensor Uptime Validation,2025-11-09,2025-11-17,9,Complete,100%,David Moad,1.14,99.98%+ uptime achieved
+Phase 1: Core Infrastructure,1.16,Node-RED VM Creation,2025-11-05,2025-11-08,4,Complete,100%,David Moad,1.4,Ubuntu Server 22.04 VM deployed
+Phase 1: Core Infrastructure,1.17,Node-RED Installation,2025-11-09,2025-11-11,3,Complete,100%,David Moad,1.16,Node.js v20.x + Node-RED installed
+Phase 1: Core Infrastructure,1.18,Node-RED Service Configuration,2025-11-12,2025-11-12,1,Complete,100%,David Moad,1.17,Auto-start enabled (10.30.0.52:1880)
+Phase 1: Core Infrastructure,1.19,TrueNAS Configuration Backup,2025-11-13,2025-11-13,1,Complete,100%,David Moad,1.5,Config exported for disaster recovery
+Phase 1: Core Infrastructure,1.20,Network Documentation,2025-11-12,2025-11-17,6,Complete,100%,David Moad,1.15,NETWORK_SETUP_PROGRESS.md created
+Phase 1: Data Pipeline,1.21,MQTT Broker VM Planning,2025-11-14,2025-11-17,4,In Progress,30%,David Moad,1.18,VM specs defined (10.30.0.51)
+Phase 1: Data Pipeline,1.22,MQTT Broker VM Deployment,2025-11-18,2025-11-22,5,Pending,0%,David Moad,1.21,Ubuntu Server + Mosquitto installation
+Phase 1: Data Pipeline,1.23,MQTT Broker Configuration,2025-11-23,2025-11-25,3,Pending,0%,David Moad,1.22,TLS encryption; topic structure setup
+Phase 1: Data Pipeline,1.24,Raspberry Pi MQTT Script Updates,2025-11-26,2025-11-30,5,Pending,0%,David Moad,1.23,Add paho-mqtt library; publish to topics
+Phase 1: Data Pipeline,1.25,MQTT Data Flow Testing,2025-12-01,2025-12-03,3,Pending,0%,David Moad,1.24,Verify <1% data loss
+Phase 1: Data Pipeline,1.26,Node-RED MQTT Subscriber Flows,2025-12-04,2025-12-08,5,Pending,0%,David Moad,1.25,Subscribe to hospital/# topics
+Phase 2: Network Segmentation,2.1,VLAN Architecture Design,2025-12-09,2025-12-12,4,Pending,0%,David Moad,1.25,Define VLANs 10/20/30/40/50
+Phase 2: Network Segmentation,2.2,UDM-SE VLAN Configuration,2025-12-13,2025-12-15,3,Pending,0%,David Moad,2.1,Create VLANs; assign subnets
+Phase 2: Network Segmentation,2.3,Switch Port VLAN Assignment,2025-12-16,2025-12-18,3,Pending,0%,David Moad,2.2,Assign ports to appropriate VLANs
+Phase 2: Network Segmentation,2.4,Device VLAN Migration,2025-12-19,2025-12-22,4,Pending,0%,David Moad,2.3,Move devices to segmented VLANs
+Phase 2: Network Segmentation,2.5,Firewall Rules Creation,2025-12-23,2025-12-27,5,Pending,0%,David Moad,2.4,Inter-VLAN traffic policies
+Phase 2: Network Segmentation,2.6,VLAN Segmentation Testing,2025-12-28,2025-12-31,4,Pending,0%,David Moad,2.5,Verify isolation and routing
+Phase 2: Network Segmentation,2.7,SSH Key-Based Authentication,2026-01-01,2026-01-05,5,Pending,0%,David Moad,2.6,Replace password auth on all devices
+Phase 2: Visualization,2.8,PostgreSQL VM Deployment,2026-01-06,2026-01-10,5,Pending,0%,David Moad,1.26,Ubuntu Server + PostgreSQL 15.x
+Phase 2: Visualization,2.9,PostgreSQL Schema Design,2026-01-11,2026-01-13,3,Pending,0%,David Moad,2.8,Time-series table for heartbeat data
+Phase 2: Visualization,2.10,Node-RED to PostgreSQL Integration,2026-01-14,2026-01-18,5,Pending,0%,David Moad,2.9,Data storage flows configured
+Phase 2: Visualization,2.11,Grafana VM Deployment,2026-01-19,2026-01-23,5,Pending,0%,David Moad,2.10,Ubuntu Server + Grafana 10.x
+Phase 2: Visualization,2.12,Grafana Data Source Configuration,2026-01-24,2026-01-25,2,Pending,0%,David Moad,2.11,Connect to PostgreSQL database
+Phase 2: Visualization,2.13,Real-Time Vitals Dashboard,2026-01-26,2026-01-30,5,Pending,0%,David Moad,2.12,4-6 sensor panels
+Phase 2: Visualization,2.14,Historical Trends Dashboard,2026-01-31,2026-02-04,5,Pending,0%,David Moad,2.13,24-hour / 7-day / 30-day views
+Phase 2: Visualization,2.15,Grafana Alerting Configuration,2026-02-05,2026-02-08,4,Pending,0%,David Moad,2.14,Abnormal BPM and sensor failure alerts
+Phase 3: Machine Learning,3.1,Data Collection (30+ days),2025-11-09,2026-01-08,61,In Progress,80%,David Moad,1.15,Sensors running continuously
+Phase 3: Machine Learning,3.2,ML VM Deployment,2026-02-09,2026-02-13,5,Pending,0%,David Moad,2.10,Ubuntu Server + Python ML stack
+Phase 3: Machine Learning,3.3,Data Extraction & Preprocessing,2026-02-14,2026-02-18,5,Pending,0%,David Moad,"3.1,3.2",Export PostgreSQL data; feature engineering
+Phase 3: Machine Learning,3.4,Baseline Model Training (Gaussian),2026-02-19,2026-02-23,5,Pending,0%,David Moad,3.3,Normal heartbeat distribution model
+Phase 3: Machine Learning,3.5,Anomaly Classification Model,2026-02-24,2026-03-05,10,Pending,0%,David Moad,3.4,Medical vs. Cyber anomaly (Random Forest/LSTM)
+Phase 3: Machine Learning,3.6,Model Validation & Tuning,2026-03-06,2026-03-12,7,Pending,0%,David Moad,3.5,Target: >90% accuracy
+Phase 3: Machine Learning,3.7,Model Deployment Integration,2026-03-13,2026-03-17,5,Pending,0%,David Moad,3.6,Integrate with Node-RED pipeline
+Phase 3: Machine Learning,3.8,Real-Time Anomaly Detection Testing,2026-03-18,2026-03-22,5,Pending,0%,David Moad,3.7,Validate live detection
+Phase 4: Security Infrastructure,4.1,Wazuh SIEM VM Deployment,2026-03-23,2026-03-28,6,Pending,0%,David Moad,2.6,Ubuntu Server + Wazuh 4.x
+Phase 4: Security Infrastructure,4.2,Wazuh Agent Installation,2026-03-29,2026-04-02,5,Pending,0%,David Moad,4.1,Deploy agents to all devices
+Phase 4: Security Infrastructure,4.3,Wazuh Log Aggregation Configuration,2026-04-03,2026-04-07,5,Pending,0%,David Moad,4.2,Centralized logging from all systems
+Phase 4: Security Infrastructure,4.4,CIS Benchmark Compliance Checks,2026-04-08,2026-04-12,5,Pending,0%,David Moad,4.3,Automated compliance scanning
+Phase 4: Security Infrastructure,4.5,Wazuh Alerting & Playbooks,2026-04-13,2026-04-17,5,Pending,0%,David Moad,4.4,Incident response automation
+Phase 4: Security Infrastructure,4.6,IDS/IPS VM Deployment,2026-04-18,2026-04-22,5,Pending,0%,David Moad,4.1,Ubuntu Server + Zeek + Suricata
+Phase 4: Security Infrastructure,4.7,Network Traffic Mirroring Setup,2026-04-23,2026-04-25,3,Pending,0%,David Moad,4.6,Configure switch port mirroring
+Phase 4: Security Infrastructure,4.8,Zeek Configuration,2026-04-26,2026-04-29,4,Pending,0%,David Moad,4.7,Network traffic analysis and logging
+Phase 4: Security Infrastructure,4.9,Suricata IPS Rules,2026-04-30,2026-05-04,5,Pending,0%,David Moad,4.8,Signature-based intrusion prevention
+Phase 4: Security Infrastructure,4.10,Wazuh-IDS Integration,2026-05-05,2026-05-09,5,Pending,0%,David Moad,"4.5,4.9",Alert correlation between SIEM and IDS
+Phase 5: Attack Simulation,5.1,Kali Linux VM #1 Deployment,2026-05-10,2026-05-13,4,Pending,0%,David Moad,2.6,Offensive security VM on Attack VLAN
+Phase 5: Attack Simulation,5.2,Kali Linux VM #2 Deployment,2026-05-14,2026-05-15,2,Pending,0%,David Moad,5.1,Second attacker VM for multi-vector scenarios
+Phase 5: Attack Simulation,5.3,Metasploitable VM Deployment,2026-05-16,2026-05-18,3,Pending,0%,David Moad,5.2,Intentionally vulnerable target VM
+Phase 5: Attack Simulation,5.4,T-Pot Honeypot Deployment,2026-05-19,2026-05-23,5,Pending,0%,David Moad,5.3,Attack capture and analysis platform
+Phase 5: Attack Simulation,5.5,Attack Scenario Development,2026-05-24,2026-06-04,12,Pending,0%,David Moad,5.4,"Document 10+ scenarios (ransomware, DoS, MitM, etc.)"
+Phase 5: Attack Simulation,5.6,Attack Scenario Execution & Testing,2026-06-05,2026-06-15,11,Pending,0%,David Moad,5.5,Validate detection by SIEM/IDS
+Phase 5: Attack Simulation,5.7,Penetration Testing Report,2026-06-16,2026-06-22,7,Pending,0%,David Moad,5.6,Document findings and remediation
+Phase 6: Advanced Features,6.1,Raspberry Pi #5-6 Configuration,2026-06-23,2026-06-27,5,Pending,0%,David Moad,1.24,Additional IoT sensors (10.30.0.24-25)
+Phase 6: Advanced Features,6.2,FHIR Server VM Deployment (Optional),2026-06-28,2026-07-10,13,Pending,0%,David Moad,2.10,Healthcare data integration (future research)
+Phase 6: Advanced Features,6.3,Orthanc PACS VM (Optional),2026-07-11,2026-07-25,15,Pending,0%,David Moad,6.2,Medical imaging workflows (future research)
+Phase 6: Advanced Features,6.4,Keycloak IDM VM (Optional),2026-07-26,2026-08-10,16,Pending,0%,David Moad,6.3,Zero Trust identity management (future)
+Phase 6: Advanced Features,6.5,HashiCorp Vault VM (Optional),2026-08-11,2026-08-20,10,Pending,0%,David Moad,6.4,Secrets management (future)
+Documentation & Reporting,D.1,NETWORK_SETUP_PROGRESS.md Creation,2025-11-12,2025-11-17,6,Complete,100%,David Moad,1.20,Real-time documentation
+Documentation & Reporting,D.2,Preliminary Proposal PDF Export,2025-10-08,2025-10-08,1,Complete,100%,David Moad,0.2,Archive version
+Documentation & Reporting,D.3,Firewall Compliance Summary,2025-10-12,2025-10-12,1,Complete,100%,David Moad,1.7,Standards mapping document
+Documentation & Reporting,D.4,Security Standards & Workflow Doc,2025-09-20,2025-09-20,1,Complete,100%,David Moad,0.2,Workflow documentation
+Documentation & Reporting,D.5,Technical Report Draft (Markdown),2025-11-17,2025-11-17,1,Complete,100%,David Moad,"1.20,D.1",15000-word comprehensive report
+Documentation & Reporting,D.6,Technical Report - Team Reflection,2025-11-18,2025-11-20,3,Pending,0%,David Moad,D.5,Personal reflection section
+Documentation & Reporting,D.7,Technical Report - References,2025-11-21,2025-11-22,2,Pending,0%,David Moad,D.5,Compile all citations
+Documentation & Reporting,D.8,Technical Report - Appendices,2025-11-23,2025-11-25,3,Pending,0%,David Moad,"D.5,D.9",Gantt chart; diagrams; code listings
+Documentation & Reporting,D.9,Gantt Chart Creation (Excel CSV),2025-11-17,2025-11-17,1,Complete,100%,David Moad,D.5,Project timeline visualization
+Documentation & Reporting,D.10,Technical Report Word Conversion,2025-11-26,2025-11-27,2,Pending,0%,David Moad,D.8,Convert Markdown to .docx format
+Documentation & Reporting,D.11,Technical Report Final Review,2025-11-28,2025-11-30,3,Pending,0%,David Moad,D.10,Proofread; format; finalize
+Documentation & Reporting,D.12,5-Minute Presentation Development,2025-12-01,2025-12-05,5,Pending,0%,David Moad,D.11,Slides + speaker notes
+Documentation & Reporting,D.13,Presentation Rehearsal,2025-12-06,2025-12-08,3,Pending,0%,David Moad,D.12,Practice timing (5 min + 2 min Q&A)
+Documentation & Reporting,D.14,Technical Report Submission,2025-12-09,2025-12-09,1,Pending,0%,David Moad,D.11,Final submission to instructor
+Documentation & Reporting,D.15,Final Presentation Delivery,2025-12-10,2025-12-10,1,Pending,0%,David Moad,D.13,Present to class + peer reviews
+Milestones,M.1,Project Kickoff,2025-08-26,2025-08-26,1,Complete,100%,,,Semester begins
+Milestones,M.2,Preliminary Proposal Submitted,2025-09-23,2025-09-23,1,Complete,100%,,0.3,
+Milestones,M.3,Hardware Procurement Complete,2025-09-30,2025-09-30,1,Complete,100%,,1.1,All equipment acquired
+Milestones,M.4,Network Infrastructure Operational,2025-10-21,2025-10-21,1,Complete,100%,,1.7,Flat network (VLAN 30) validated
+Milestones,M.5,IoT Sensors Operational,2025-11-09,2025-11-09,1,Complete,100%,,1.14,4 Raspberry Pis generating data
+Milestones,M.6,8-Day Uptime Validation Complete,2025-11-17,2025-11-17,1,Complete,100%,,1.15,99.98%+ uptime achieved
+Milestones,M.7,Phase 1 Complete (Data Pipeline),2025-12-08,2025-12-08,1,Pending,0%,,1.26,MQTT → Node-RED operational
+Milestones,M.8,Phase 2 Complete (Segmentation),2026-02-08,2026-02-08,1,Pending,0%,,2.15,Multi-VLAN architecture + Grafana
+Milestones,M.9,Phase 3 Complete (ML),2026-03-22,2026-03-22,1,Pending,0%,,3.8,Anomaly detection live
+Milestones,M.10,Phase 4 Complete (Security),2026-05-09,2026-05-09,1,Pending,0%,,4.10,SIEM + IDS integrated
+Milestones,M.11,Phase 5 Complete (Attack Lab),2026-06-22,2026-06-22,1,Pending,0%,,5.7,10+ attack scenarios documented
+Milestones,M.12,Technical Report Submitted,2025-12-09,2025-12-09,1,Pending,0%,,D.14,Final deliverable
+Milestones,M.13,Final Presentation,2025-12-10,2025-12-10,1,Pending,0%,,D.15,5-minute presentation + Q&A
+Milestones,M.14,Semester Complete,2025-12-15,2025-12-15,1,Pending,0%,,,End of Fall 2025 semester

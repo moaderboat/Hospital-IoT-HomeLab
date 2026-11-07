@@ -1,0 +1,74 @@
+﻿=== laptop_diag 2026-11-06 12:38:57 on ULTRAMOAD
+
+=== Adapters that are up
+Ethernet | IPv4 169.254.129.29 | GW  | DNS fec0:0:0:ffff::1,fec0:0:0:ffff::2,fec0:0:0:ffff::3 | MAC D4-A2-CD-F7-11-D0 | DHCP Disabled
+Ethernet 3 | IPv4 169.254.46.6 | GW  | DNS fec0:0:0:ffff::1,fec0:0:0:ffff::2,fec0:0:0:ffff::3 | MAC 0A-00-27-00-00-17 | DHCP Disabled
+Wi-Fi | IPv4 192.168.1.14 | GW 192.168.1.1 | DNS 192.168.1.1 | MAC 80-E4-BA-D8-54-C3 | DHCP Enabled
+
+=== Reachability
+UDM-SE (VLAN30)    10.30.0.1       ping=False tcp443=False
+UDM-SE (Default)   192.168.0.1     ping=False tcp443=False
+Switch mgmt        192.168.0.130   ping=False tcp443=False
+TrueNAS            10.30.0.44      ping=False tcp80=False
+Node-RED           10.30.0.52      ping=False tcp1880=False
+Vulnerable Pi      192.168.50.100  ping=False tcp22=False
+
+=== ARP table (who answered on the wire)
+
+Interface: 169.254.129.29 --- 0x12
+  Internet Address      Physical Address      Type
+  169.254.255.255       ff-ff-ff-ff-ff-ff     static    
+  224.0.0.22            01-00-5e-00-00-16     static    
+  224.0.0.251           01-00-5e-00-00-fb     static    
+  224.0.0.252           01-00-5e-00-00-fc     static    
+  239.255.255.250       01-00-5e-7f-ff-fa     static    
+
+Interface: 192.168.1.14 --- 0x15
+  Internet Address      Physical Address      Type
+  192.168.1.1           74-fa-29-3c-47-9c     dynamic   
+  192.168.1.12          b4-8c-9d-f5-25-47     dynamic   
+  192.168.1.28          84-3e-1d-a9-77-71     dynamic   
+  192.168.1.200         10-ff-e0-b8-62-fc     dynamic   
+  192.168.1.255         ff-ff-ff-ff-ff-ff     static    
+  224.0.0.22            01-00-5e-00-00-16     static    
+  224.0.0.251           01-00-5e-00-00-fb     static    
+  224.0.0.252           01-00-5e-00-00-fc     static    
+  239.255.255.250       01-00-5e-7f-ff-fa     static    
+  255.255.255.255       ff-ff-ff-ff-ff-ff     static    
+
+Interface: 169.254.46.6 --- 0x17
+  Internet Address      Physical Address      Type
+  169.254.255.255       ff-ff-ff-ff-ff-ff     static    
+  224.0.0.22            01-00-5e-00-00-16     static    
+  224.0.0.251           01-00-5e-00-00-fb     static    
+  224.0.0.252           01-00-5e-00-00-fc     static    
+  239.255.255.250       01-00-5e-7f-ff-fa     static    
+
+=== Routes (IPv4)
+ 18...d4 a2 cd f7 11 d0 ......Intel(R) Ethernet Connection (24) I219-LM
+ 23...0a 00 27 00 00 17 ......VirtualBox Host-Only Ethernet Adapter
+  5...80 e4 ba d8 54 c4 ......Intel(R) Wi-Fi 7 BE201 320MHz #2
+ 17...82 e4 ba d8 54 c3 ......Intel(R) Wi-Fi 7 BE201 320MHz #4
+ 21...80 e4 ba d8 54 c3 ......Intel(R) Wi-Fi 7 BE201 320MHz
+  1...........................Software Loopback Interface 1
+          0.0.0.0          0.0.0.0      192.168.1.1     192.168.1.14     35
+        127.0.0.0        255.0.0.0         On-link         127.0.0.1    331
+        127.0.0.1  255.255.255.255         On-link         127.0.0.1    331
+  127.255.255.255  255.255.255.255         On-link         127.0.0.1    331
+      169.254.0.0      255.255.0.0         On-link      169.254.46.6    281
+      169.254.0.0      255.255.0.0         On-link    169.254.129.29    281
+     169.254.46.6  255.255.255.255         On-link      169.254.46.6    281
+   169.254.129.29  255.255.255.255         On-link    169.254.129.29    281
+  169.254.255.255  255.255.255.255         On-link      169.254.46.6    281
+  169.254.255.255  255.255.255.255         On-link    169.254.129.29    281
+      192.168.1.0    255.255.255.0         On-link      192.168.1.14    291
+     192.168.1.14  255.255.255.255         On-link      192.168.1.14    291
+    192.168.1.255  255.255.255.255         On-link      192.168.1.14    291
+        224.0.0.0        240.0.0.0         On-link         127.0.0.1    331
+        224.0.0.0        240.0.0.0         On-link      169.254.46.6    281
+        224.0.0.0        240.0.0.0         On-link    169.254.129.29    281
+        224.0.0.0        240.0.0.0         On-link      192.168.1.14    291
+  255.255.255.255  255.255.255.255         On-link         127.0.0.1    331
+  255.255.255.255  255.255.255.255         On-link      169.254.46.6    281
+  255.255.255.255  255.255.255.255         On-link    169.254.129.29    281
+  255.255.255.255  255.255.255.255         On-link      192.168.1.14    291

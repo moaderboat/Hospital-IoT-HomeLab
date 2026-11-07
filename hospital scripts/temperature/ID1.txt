@@ -1,0 +1,8 @@
+from sense_hat import SenseHat
+import time
+sense = SenseHat()
+
+while True:
+	temp = 1
+	sense.show_message(str(temp), scroll_speed=0)
+	time.sleep(1)

@@ -1,0 +1,1 @@
+[{"id":"9888dea7-7b82-4189-a562-d7fc51f2dc67","username":"admin","emailVerified":false,"attributes":{"is_temporary_admin":["true"]},"createdTimestamp":1768579389276,"enabled":true,"totp":false,"disableableCredentialTypes":[],"requiredActions":[],"notBefore":0,"access":{"manageGroupMembership":true,"view":true,"mapRoles":true,"impersonate":true,"manage":true}}]

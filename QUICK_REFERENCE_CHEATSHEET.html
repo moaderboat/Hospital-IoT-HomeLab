@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Homelab - Quick Reference Cheat Sheet</title>
+    <style>
+        @page {
+            margin: 0.5in;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.4;
+            color: #333;
+            background: white;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 4px solid #2c3e50;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header .subtitle {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .subsection-title {
+            background: #ecf0f1;
+            color: #2c3e50;
+            padding: 6px 10px;
+            font-size: 13px;
+            font-weight: bold;
+            border-left: 4px solid #3498db;
+            margin: 10px 0 8px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            font-size: 11px;
+        }
+
+        table th {
+            background: #34495e;
+            color: white;
+            padding: 8px;
+            text-align: left;
+            font-weight: 600;
+            border: 1px solid #2c3e50;
+        }
+
+        table td {
+            padding: 6px 8px;
+            border: 1px solid #bdc3c7;
+        }
+
+        table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        table tr:hover {
+            background: #e8f4f8;
+        }
+
+        .code-block {
+            background: #2c3e50;
+            color: #2ecc71;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            margin: 8px 0;
+            overflow-x: auto;
+        }
+
+        .code-inline {
+            background: #ecf0f1;
+            color: #e74c3c;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+        }
+
+        .alert-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+
+        .alert-box strong {
+            color: #856404;
+        }
+
+        .info-box {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .highlight-red {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .highlight-green {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .highlight-blue {
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        ul {
+            margin-left: 20px;
+            font-size: 11px;
+        }
+
+        li {
+            margin-bottom: 4px;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            table tr:hover {
+                background: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Hospital Homelab & Balloon Demo</h1>
+        <div class="subtitle">Quick Reference Cheat Sheet</div>
+        <div class="subtitle">UC Computer Engineering Senior Capstone | Last Updated: 2026-04-05</div>
+    </div>
+
+    <!-- VIRTUAL MACHINES SECTION -->
+    <div class="section">
+        <div class="section-title">Virtual Machines (TrueNAS 10.30.0.44)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>VM Name</th>
+                    <th>IP Address</th>
+                    <th>Service</th>
+                    <th>Port(s)</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>PostgreSQL</strong></td>
+                    <td>10.30.0.50</td>
+                    <td>PostgreSQL 16.10</td>
+                    <td>5432</td>
+                    <td>SSL required, 180GB DB, 7-day retention</td>
+                </tr>
+                <tr>
+                    <td><strong>MQTT Broker</strong></td>
+                    <td>10.30.0.51</td>
+                    <td>Mosquitto</td>
+                    <td>1883</td>
+                    <td>Auth required, no anonymous</td>
+                </tr>
+                <tr>
+                    <td><strong>Node-RED</strong></td>
+                    <td>10.30.0.52</td>
+                    <td>Dashboard</td>
+                    <td>1880</td>
+                    <td>/ui for dashboard, Keycloak SSO</td>
+                </tr>
+                <tr>
+                    <td><strong>Grafana</strong></td>
+                    <td>10.30.0.53</td>
+                    <td>Dashboards</td>
+                    <td>3000</td>
+                    <td>Keycloak SSO, UTC timezone (+5hr)</td>
+                </tr>
+                <tr>
+                    <td><strong>Mirth Connect</strong></td>
+                    <td>10.30.0.54</td>
+                    <td>HL7/FHIR</td>
+                    <td>8443, 8081</td>
+                    <td>HeartRate_FHIR_Final channel</td>
+                </tr>
+                <tr>
+                    <td><strong>Wazuh SIEM</strong></td>
+                    <td>10.30.0.55</td>
+                    <td>Security</td>
+                    <td>443</td>
+                    <td>14 agents, SSO broken (use basic auth)</td>
+                </tr>
+                <tr>
+                    <td><strong>HAPI FHIR</strong></td>
+                    <td>10.30.0.56</td>
+                    <td>FHIR Server</td>
+                    <td>8080, 4180</td>
+                    <td>Firewall: Mirth only, Docker</td>
+                </tr>
+                <tr>
+                    <td><strong>Keycloak</strong></td>
+                    <td>10.30.0.57</td>
+                    <td>SSO/IDM</td>
+                    <td>8080</td>
+                    <td>Realm: hospital-homelab</td>
+                </tr>
+                <tr>
+                    <td><strong>HashiCorp Vault</strong></td>
+                    <td>10.30.0.58</td>
+                    <td>Secrets</td>
+                    <td>8200</td>
+                    <td class="highlight-red">Requires unseal after reboot</td>
+                </tr>
+                <tr>
+                    <td><strong>Elasticsearch</strong></td>
+                    <td>10.30.0.60</td>
+                    <td>IDS Logs</td>
+                    <td>9200</td>
+                    <td>TLS enabled, Suricata EVE logs</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- PHYSICAL HARDWARE -->
+    <div class="section">
+        <div class="section-title">Physical Hardware</div>
+
+        <div class="subsection-title">Network Infrastructure</div>
+        <table>
+            <tr>
+                <td><strong>TrueNAS Server</strong></td>
+                <td>10.30.0.44</td>
+                <td><strong>iDRAC 9:</strong> 10.30.0.45</td>
+            </tr>
+            <tr>
+                <td><strong>UDM-SE Gateway</strong></td>
+                <td>10.30.0.1</td>
+                <td>Network gateway & firewall</td>
+            </tr>
+            <tr>
+                <td><strong>WiFi AP (U6 Pro)</strong></td>
+                <td>10.30.0.246</td>
+                <td>UniFi access point</td>
+            </tr>
+        </table>
+
+        <div class="subsection-title">Raspberry Pis - Hospital Heart Rate Monitors (VLAN 30)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Pi #</th>
+                    <th>IP Address</th>
+                    <th>Hostname</th>
+                    <th>BPM Pattern</th>
+                    <th>Special Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Pi #1</td>
+                    <td>10.30.0.20</td>
+                    <td>username</td>
+                    <td>72 BPM ±2.5 HRV</td>
+                    <td>Standard patient</td>
+                </tr>
+                <tr>
+                    <td>Pi #2</td>
+                    <td>10.30.0.21</td>
+                    <td>username</td>
+                    <td>68 BPM ±3.5 HRV</td>
+                    <td>Most variable</td>
+                </tr>
+                <tr>
+                    <td>Pi #3</td>
+                    <td>10.30.0.22</td>
+                    <td>username</td>
+                    <td>75 BPM ±2 HRV</td>
+                    <td>Most stable</td>
+                </tr>
+                <tr>
+                    <td>Pi #4</td>
+                    <td>10.30.0.23</td>
+                    <td>username</td>
+                    <td>70-150 BPM irregular</td>
+                    <td class="highlight-red">AFib simulation</td>
+                </tr>
+                <tr>
+                    <td>Pi #5</td>
+                    <td>10.30.0.24</td>
+                    <td>username</td>
+                    <td>70 BPM, rare anomalies</td>
+                    <td>~1 anomaly per 5.5 hours</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="subsection-title">Raspberry Pis - Balloon Demo</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>System</th>
+                    <th>IP Address</th>
+                    <th>VLAN</th>
+                    <th>Hostname</th>
+                    <th>Configuration</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="highlight-green"><strong>Secure Pi</strong></td>
+                    <td>10.30.0.25</td>
+                    <td>30</td>
+                    <td>balloon-secure</td>
+                    <td>Target: 25 PSI, validation enabled</td>
+                </tr>
+                <tr>
+                    <td class="highlight-red"><strong>Vulnerable Pi</strong></td>
+                    <td>192.168.50.100</td>
+                    <td>2</td>
+                    <td>balloon-vulnerable</td>
+                    <td>Target: 25 PSI, NO validation</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="info-box">
+            <strong>Vulnerable Pi Hardware:</strong><br>
+            • 8-RELAYS HAT (I2C 0x27): Solenoid control (R2=Inflate, R3=Vent, R4=Relief)<br>
+            • 40A 3-Relay HAT (I2C 0x60): Air pump (R3, 23A load)<br>
+            • DATAQ 100 PSI sensors × 2 via ADS1115 + BSS138 (A0=upstream, A1=downstream)
+        </div>
+
+        <div class="subsection-title">IDS Laptop (Bare Metal)</div>
+        <table>
+            <tr>
+                <td><strong>IP Address</strong></td>
+                <td>192.168.50.191 (VLAN 2)</td>
+            </tr>
+            <tr>
+                <td><strong>Services</strong></td>
+                <td>Suricata IDS + Filebeat</td>
+            </tr>
+            <tr>
+                <td><strong>Port 6</strong></td>
+                <td>Management interface (static IP)</td>
+            </tr>
+            <tr>
+                <td><strong>Port 7</strong></td>
+                <td>Monitor interface (mirrors Switch Port 15)</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- NETWORK VLANS -->
+    <div class="section">
+        <div class="section-title">Network VLANs & Firewall</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>VLAN</th>
+                    <th>Subnet</th>
+                    <th>Purpose</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>VLAN 30</strong></td>
+                    <td>10.30.0.0/24</td>
+                    <td class="highlight-green">Secure hospital infrastructure</td>
+                </tr>
+                <tr>
+                    <td><strong>VLAN 2</strong></td>
+                    <td>192.168.50.0/24</td>
+                    <td class="highlight-red">Vulnerable balloon demo attack lab</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="alert-box">
+            <strong>Cross-VLAN Firewall Exceptions (Priority < 20001):</strong><br>
+            • 192.168.50.100 → 10.30.0.51:1883 (Vulnerable Pi → MQTT Broker)<br>
+            • 192.168.50.191 → 10.30.0.60:9200 (Suricata → Elasticsearch)
+        </div>
+    </div>
+
+    <!-- LOGIN CREDENTIALS -->
+    <div class="section">
+        <div class="section-title">Login Credentials - Web UIs</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>URL</th>
+                    <th>Username</th>
+                    <th>Password</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>UDM-SE</strong></td>
+                    <td>https://10.30.0.1</td>
+                    <td>username</td>
+                    <td>password</td>
+                </tr>
+                <tr>
+                    <td><strong>TrueNAS</strong></td>
+                    <td>http://10.30.0.44</td>
+                    <td>username</td>
+                    <td>password</td>
+                </tr>
+                <tr>
+                    <td><strong>Node-RED</strong></td>
+                    <td>http://10.30.0.52:1880</td>
+                    <td>username (SSO)</td>
+                    <td>password</td>
+                </tr>
+                <tr>
+                    <td><strong>Grafana</strong></td>
+                    <td>http://10.30.0.53:3000</td>
+                    <td>admin</td>
+                    <td>password</td>
+                </tr>
+                <tr>
+                    <td><strong>Mirth Connect</strong></td>
+                    <td>https://10.30.0.54:8443</td>
+                    <td>admin</td>
+                    <td>password</td>
+                </tr>
+                <tr>
+                    <td><strong>Wazuh</strong></td>
+                    <td>https://10.30.0.55</td>
+                    <td>admin</td>
+                    <td>password</td>
+                </tr>
+                <tr>
+                    <td><strong>Vault</strong></td>
+                    <td>http://10.30.0.58:8200</td>
+                    <td>Token</td>
+                    <td>password</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="info-box">
+            <strong>Keycloak Realm:</strong> hospital-homelab<br>
+            <strong>Keycloak Users:</strong> username, username / password
+        </div>
+    </div>
+
+    <!-- SSH ACCESS -->
+    <div class="section">
+        <div class="section-title">SSH Access Commands</div>
+
+        <div class="subsection-title">Hospital Heart Rate Pis (1-5)</div>
+        <div class="code-block">ssh username@10.30.0.20   # Password: password
+ssh username@10.30.0.21
+ssh username@10.30.0.22
+ssh username@10.30.0.23
+ssh username@10.30.0.24</div>
+
+        <div class="subsection-title">Balloon Demo Pis</div>
+        <div class="code-block">ssh username@10.30.0.25        # Secure Pi (VLAN 30)
+ssh username@192.168.50.100    # Vulnerable Pi (VLAN 2)
+# Password: password</div>
+
+        <div class="subsection-title">VMs & IDS Laptop</div>
+        <div class="code-block">ssh username@10.30.0.50        # PostgreSQL VM
+ssh username@192.168.50.191            # Suricata IDS Laptop
+# Password: password</div>
+    </div>
+
+    <!-- VAULT UNSEAL -->
+    <div class="section">
+        <div class="section-title">⚠️ Vault Unseal Keys (Required After Reboot)</div>
+
+        <div class="alert-box">
+            <strong>URL:</strong> http://10.30.0.58:8200<br>
+            <strong>Enter 3 of these 5 keys:</strong>
+        </div>
+
+        <div class="code-block">password
+password
+password</div>
+
+        <div class="subsection-title">Login Token</div>
+        <div class="code-block">password</div>
+
+        <div class="subsection-title">CLI Method</div>
+        <div class="code-block">export VAULT_ADDR='http://10.30.0.58:8200'
+vault operator unseal password
+vault operator unseal password
+vault operator unseal password
+vault status  # Should show "Sealed: false"</div>
+    </div>
+
+    <!-- MQTT CREDENTIALS -->
+    <div class="section">
+        <div class="section-title">MQTT Broker Credentials</div>
+        <table>
+            <tr>
+                <td><strong>Broker</strong></td>
+                <td>10.30.0.51:1883</td>
+            </tr>
+            <tr>
+                <td><strong>Username</strong></td>
+                <td>username</td>
+            </tr>
+            <tr>
+                <td><strong>Password</strong></td>
+                <td>password</td>
+            </tr>
+        </table>
+
+        <div class="subsection-title">Test Command</div>
+        <div class="code-block">mosquitto_sub -h 10.30.0.51 -u username -P password -t '#' -v</div>
+    </div>
+
+    <!-- POSTGRESQL -->
+    <div class="section">
+        <div class="section-title">PostgreSQL Databases (10.30.0.50:5432)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Database</th>
+                    <th>Size</th>
+                    <th>Purpose</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>hospital_data</td>
+                    <td>180GB</td>
+                    <td>Heartrate data (60M active + 873M archive)</td>
+                </tr>
+                <tr>
+                    <td>hapi_fhir</td>
+                    <td>35GB</td>
+                    <td>FHIR resource storage</td>
+                </tr>
+                <tr>
+                    <td>keycloak</td>
+                    <td>13MB</td>
+                    <td>SSO user data</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="info-box">
+            <strong>Archival Job:</strong> Daily at 2 AM UTC (10 PM EDT) - moves data >7 days to archive
+        </div>
+
+        <div class="subsection-title">Quick Data Check</div>
+        <div class="code-block">ssh username@10.30.0.50
+sudo -u postgres psql -d hospital_data -c \
+  "SELECT pi_id, MAX(timestamp) as latest FROM heartrate_data GROUP BY pi_id ORDER BY pi_id;"</div>
+    </div>
+
+    <!-- SERVICE RESTART COMMANDS -->
+    <div class="section">
+        <div class="section-title">Common Service Restart Commands</div>
+
+        <div class="subsection-title">Hospital Heart Rate Services (after power cycle)</div>
+        <div class="code-block">ssh username@10.30.0.20 "sudo systemctl restart heartrate1.service"
+ssh username@10.30.0.21 "sudo systemctl restart heartrate2.service"
+ssh username@10.30.0.22 "sudo systemctl restart heartrate3.service"
+ssh username@10.30.0.23 "sudo systemctl restart heartrate4.service"
+ssh username@10.30.0.24 "sudo systemctl restart heartrate5.service"</div>
+
+        <div class="subsection-title">Balloon Demo Services</div>
+        <div class="code-block"># Secure Pi
+ssh username@10.30.0.25 "sudo systemctl restart balloon-control-secure.service"
+
+# Vulnerable Pi (needs BOTH services)
+ssh username@192.168.50.100 "sudo systemctl restart balloon-sensor-publisher.service"
+ssh username@192.168.50.100 "sudo systemctl restart balloon-control-api.service"</div>
+
+        <div class="subsection-title">IDS Pipeline</div>
+        <div class="code-block">ssh username@192.168.50.191 "sudo systemctl restart filebeat"</div>
+    </div>
+
+    <!-- ATTACK DEMO -->
+    <div class="section">
+        <div class="section-title">Attack Demo Commands</div>
+
+        <div class="subsection-title">Run Dual-Target Attack (from Suricata laptop)</div>
+        <div class="code-block">ssh username@192.168.50.191
+cd /path/to/balloon-demo/scripts
+python3 attack_spoof.py --dual --pressure 0.0 --rate 0.1</div>
+
+        <div class="alert-box">
+            <strong>What Happens:</strong><br>
+            • Attacks BOTH 192.168.50.100 (Vulnerable) AND 10.30.0.25 (Secure) at 10 Hz each<br>
+            • <span class="highlight-red">Vulnerable Pi:</span> Accepts fake 0.0 PSI → pump runs → pressure exceeds safe limits<br>
+            • <span class="highlight-green">Secure Pi:</span> Rejects fake data (sensor mismatch) → pump stays off → safe at 25 PSI<br>
+            • Suricata captures all traffic → Grafana IDS Dashboard shows attacks<br>
+            • Wazuh SIEM logs all rejections with forensic details
+        </div>
+    </div>
+
+    <!-- QUICK VERIFICATION -->
+    <div class="section">
+        <div class="section-title">Quick Verification URLs</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Dashboard</th>
+                    <th>URL</th>
+                    <th>What to Check</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Node-RED UI</strong></td>
+                    <td>http://10.30.0.52:1880/ui</td>
+                    <td>All 5 heart rate gauges + ECG waveforms updating<br>4 balloon gauges (vulnerable/secure)<br>Security Status Panel (green = safe)</td>
+                </tr>
+                <tr>
+                    <td><strong>Grafana</strong></td>
+                    <td>http://10.30.0.53:3000</td>
+                    <td>Heart rate dashboards loading<br>Pi #4 tachycardia alert firing<br>IDS Dashboard showing events</td>
+                </tr>
+                <tr>
+                    <td><strong>Wazuh</strong></td>
+                    <td>https://10.30.0.55</td>
+                    <td>All 14 agents "Active"<br>SIEM logs visible</td>
+                </tr>
+                <tr>
+                    <td><strong>Mirth</strong></td>
+                    <td>https://10.30.0.54:8443</td>
+                    <td>HeartRate_FHIR_Final channel Started<br>Counters climbing</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- STARTUP SEQUENCE -->
+    <div class="section">
+        <div class="section-title">Startup Sequence (30 Minutes Total)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Step</th>
+                    <th>Time</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>1. Power On</strong></td>
+                    <td>5 min</td>
+                    <td>UDM-SE → Switch → TrueNAS → Pis</td>
+                </tr>
+                <tr>
+                    <td><strong>2. Wait for VMs</strong></td>
+                    <td>15 min</td>
+                    <td>Auto-start from TrueNAS</td>
+                </tr>
+                <tr>
+                    <td><strong>3. Unseal Vault</strong></td>
+                    <td>2 min</td>
+                    <td>Enter 3 unseal keys at http://10.30.0.58:8200</td>
+                </tr>
+                <tr>
+                    <td><strong>4. Restart Pi Services</strong></td>
+                    <td>3 min</td>
+                    <td>SSH to all Pis and restart services</td>
+                </tr>
+                <tr>
+                    <td><strong>5. Verify Dashboards</strong></td>
+                    <td>5 min</td>
+                    <td>Check Node-RED, Grafana, Wazuh</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="alert-box">
+            <strong>Air-Gap/Expo Mode:</strong> Plug UDM-SE WAN port into travel router BEFORE Step 1 (required for cross-VLAN routing)
+        </div>
+    </div>
+
+    <!-- TROUBLESHOOTING -->
+    <div class="section">
+        <div class="section-title">Troubleshooting Quick Checks</div>
+
+        <div class="subsection-title">No MQTT Data in Node-RED</div>
+        <div class="code-block">ssh username@10.30.0.51
+mosquitto_sub -h localhost -u username -P password -t '#' -v</div>
+
+        <div class="subsection-title">Check Vulnerable Pi MQTT Connectivity</div>
+        <div class="code-block">ssh username@192.168.50.100
+timeout 5 bash -c 'cat < /dev/null > /dev/tcp/10.30.0.51/1883' && \
+  echo "Port 1883 open" || echo "Port 1883 blocked"</div>
+
+        <div class="subsection-title">Check Elasticsearch Health</div>
+        <div class="code-block">ssh username@192.168.50.191
+curl -k -u elastic:password \
+  https://10.30.0.60:9200/_cluster/health?pretty</div>
+
+        <div class="subsection-title">Verify Service Status</div>
+        <div class="code-block"># Hospital Pi
+ssh username@10.30.0.20 "sudo systemctl status heartrate1.service"
+
+# Balloon Pi
+ssh username@192.168.50.100 "sudo systemctl status balloon-control-api.service"
+
+# IDS
+ssh username@192.168.50.191 "sudo systemctl status filebeat"</div>
+    </div>
+
+    <!-- KEY NOTES -->
+    <div class="section">
+        <div class="section-title">Important Notes</div>
+        <div class="success-box">
+            <strong>✓ Universal Password:</strong> Most systems use <span class="code-inline">password</span> (except Wazuh, UDM-SE, Vault)<br>
+            <strong>✓ Intentional Vulnerabilities:</strong> Do NOT fix /sensor endpoint on vulnerable Pi - required for demo<br>
+            <strong>✓ Grafana Timezone:</strong> UTC (5 hours ahead of EST/EDT)<br>
+            <strong>✓ PostgreSQL Retention:</strong> 7-day active, older archived daily at 2 AM UTC<br>
+            <strong>✓ Burst Pressure:</strong> 1L plastic bottles burst at 39-71 PSI (mean: 59.6 PSI)<br>
+            <strong>✓ Attack Target Pressure:</strong> 25 PSI (safe demo), 67+ PSI (burst risk)
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div style="text-align: center; margin-top: 30px; padding-top: 15px; border-top: 2px solid #bdc3c7; font-size: 11px; color: #7f8c8d;">
+        <strong>UC Computer Engineering Senior Capstone Project</strong><br>
+        Advisor: Rob Kuschel, CTH / GE Aerospace<br>
+        For detailed documentation, see: CLAUDE.md, SYSTEM_STARTUP_GUIDE.md, TROUBLESHOOTING_HISTORY.md
+    </div>
+</body>
+</html>

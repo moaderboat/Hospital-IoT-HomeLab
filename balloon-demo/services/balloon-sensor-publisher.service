@@ -1,0 +1,20 @@
+[Unit]
+Description=Balloon Demo - Sensor Publisher (Vulnerable System)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=username
+WorkingDirectory=/home/username/balloon-demo/scripts
+ExecStart=/usr/bin/python3 /home/username/balloon-demo/scripts/sensor_publisher.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Security settings (minimal - this is the vulnerable system)
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
