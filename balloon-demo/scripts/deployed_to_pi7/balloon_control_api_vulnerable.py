@@ -142,7 +142,7 @@ VENTING_COOLDOWN_SECONDS = 3.0  # Wait 3 seconds after venting before allowing p
 # or a service restart.
 ATTACK_SOURCES = ("attacker", "attacker-single")
 BURST_LOW_PSI = 15.0           # "can't build pressure" threshold (well below 25 target)
-BURST_CONFIRM_SECONDS = 8.0    # how long pressure must stay pinned low while pumping
+BURST_CONFIRM_SECONDS = 4.0    # how long pressure must stay pinned low while pumping
 PUMP_MAX_RUN_SECONDS = 120.0   # backstop: max continuous pump run
 
 demo_complete = False      # latched when the post-burst cutoff fires
