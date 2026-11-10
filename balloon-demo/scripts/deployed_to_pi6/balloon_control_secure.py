@@ -719,6 +719,21 @@ def publish_mqtt(topic, payload):
 
 app = Flask(__name__)
 
+@app.route('/')
+def root():
+    """
+    System-info endpoint. Read-only, no hardware. Mirrors the vulnerable
+    system's root route so the attack script's reachability preflight
+    (GET on the base URL) sees the secure Pi as reachable instead of a
+    404. Does NOT expose the HMAC key or any secret.
+    """
+    return jsonify({
+        "system": "Secure Balloon Control System",
+        "pi": "Pi #6 (10.30.0.25)",
+        "vlan": "VLAN30 (Secure Network)",
+        "security": f"ENABLED - HMAC-{HMAC_MODE}, I2C cross-check, rate limiting, Wazuh logging"
+    })
+
 @app.route('/status')
 def status():
     """
