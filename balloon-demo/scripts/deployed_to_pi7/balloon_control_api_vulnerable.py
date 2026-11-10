@@ -50,7 +50,7 @@ except ImportError:
 app = Flask(__name__)
 
 # MQTT Configuration
-MQTT_BROKER = "localhost"
+MQTT_BROKER = "10.30.0.51"
 MQTT_PORT = 1883
 MQTT_TOPIC_PREFIX = "balloon/vulnerable"
 username = None
@@ -63,6 +63,7 @@ def init_mqtt():
 
     try:
         username = mqtt.Client(client_id="balloon_vulnerable_control")
+        username.username_pw_set("username", "password")
         username.connect(MQTT_BROKER, MQTT_PORT, 60)
         username.loop_start()
         print(f"✓ Connected to MQTT broker at {MQTT_BROKER}:{MQTT_PORT}")
@@ -249,7 +250,7 @@ def control_loop():
 
         # UPSTREAM SAFETY RELIEF - Independent safety check (runs before all other logic)
         # Prevents dangerous upstream pressure buildup (saw 89.9 PSI in testing)
-        if current_pressure_upstream > 70.0:
+        if current_pressure_upstream > 80.0:
             if not upstream_valve_open:
                 print(f"⚠ UPSTREAM OVERPRESSURE: {current_pressure_upstream:.2f} PSI - Opening upstream relief valve")
                 set_relay(RELAY_UPSTREAM, True)
