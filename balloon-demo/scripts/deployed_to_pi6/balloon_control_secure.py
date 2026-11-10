@@ -19,6 +19,8 @@ import threading
 import syslog
 import signal
 import sys
+import hmac
+import hashlib
 from datetime import datetime
 from flask import Flask, jsonify
 
@@ -110,6 +112,96 @@ emergency_stop_count = 0
 # Attack detection clearing
 last_attack_time = None  # Track when last attack was detected
 ATTACK_CLEAR_TIMEOUT = 1.0  # Seconds of clean operation before clearing flag
+
+# ---------------------------------------------------------------------------
+# HMAC message authentication for /sensor (added 2026-11-10)
+#
+# The sensor publisher signs every reading with a shared secret key. The
+# signature covers the timestamp and the exact request body:
+#     X-Timestamp: <unix time, 6 decimals>
+#     X-Signature: hex(HMAC-SHA256(key, "<timestamp>." + body))
+#
+# Config file (never committed to git):
+#     /etc/balloon-demo/hmac.conf   owner username, chmod 600
+#     MODE=off | monitor | enforce
+#     KEY=<64 hex characters>
+#     MAX_SKEW=5            (seconds a signed reading stays valid)
+#
+#   off      - no checking at all; identical to the pre-HMAC code
+#              (this is also what happens if the file is missing)
+#   monitor  - check and log every signature, but reject nothing
+#   enforce  - reject any reading without a valid, fresh signature
+#
+# Rollback: set MODE=off and restart balloon-control-secure.
+# ---------------------------------------------------------------------------
+HMAC_CONFIG_PATH = "/etc/balloon-demo/hmac.conf"
+
+def load_hmac_config(path=HMAC_CONFIG_PATH):
+    """Read hmac.conf. Returns (mode, key_bytes, max_skew_seconds, note)."""
+    cfg = {"MODE": "off", "KEY": "", "MAX_SKEW": "5"}
+    note = f"loaded {path}"
+    try:
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                cfg[k.strip().upper()] = v.strip()
+    except FileNotFoundError:
+        note = f"{path} not found"
+    except Exception as e:
+        note = f"{path} unreadable ({e})"
+
+    mode = cfg["MODE"].lower()
+    if mode not in ("off", "monitor", "enforce"):
+        note += f"; unknown MODE '{mode}', using off"
+        mode = "off"
+    try:
+        max_skew = float(cfg["MAX_SKEW"])
+    except ValueError:
+        max_skew = 5.0
+    return mode, cfg["KEY"].encode(), max_skew, note
+
+HMAC_MODE, HMAC_KEY, HMAC_MAX_SKEW, HMAC_CONFIG_NOTE = load_hmac_config()
+hmac_valid_count = 0       # readings with a valid signature
+hmac_failed_count = 0      # readings with a missing/invalid/stale/replayed signature
+_last_signed_ts = 0.0      # newest accepted timestamp (replay protection)
+_hmac_lock = threading.Lock()
+
+def verify_signature(raw_body, headers):
+    """
+    Check the HMAC signature on a /sensor request.
+    Returns (ok, reason). reason is a short code used in logs and responses.
+    """
+    global _last_signed_ts
+
+    if not HMAC_KEY:
+        return False, "no_key_configured"   # fail closed
+
+    sig = headers.get("X-Signature", "")
+    ts_str = headers.get("X-Timestamp", "")
+    if not sig or not ts_str:
+        return False, "missing_signature"
+
+    try:
+        ts = float(ts_str)
+    except ValueError:
+        return False, "bad_timestamp"
+
+    if abs(time.time() - ts) > HMAC_MAX_SKEW:
+        return False, "stale_timestamp"
+
+    expected = hmac.new(HMAC_KEY, ts_str.encode() + b"." + raw_body, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected.encode(), sig.strip().lower().encode()):
+        return False, "bad_signature"
+
+    with _hmac_lock:
+        if ts <= _last_signed_ts:
+            return False, "replay"
+        _last_signed_ts = ts
+
+    return True, "OK"
 
 def voltage_to_psi(voltage, sensor_max_psi):
     """Convert DATAQ sensor voltage to PSI. sensor_max_psi = 15.0 or 30.0"""
@@ -569,6 +661,9 @@ def sensor_loop():
                     "network_sensor_count": network_sensor_count,
                     "accepted_network_count": accepted_network_count,
                     "rejected_network_count": rejected_network_count,
+                    "hmac_mode": HMAC_MODE,
+                    "hmac_valid_count": hmac_valid_count,
+                    "hmac_failed_count": hmac_failed_count,
                     "timestamp": datetime.now().isoformat()
                 })
 
@@ -648,6 +743,9 @@ def status():
         "rejected_network_count": rejected_network_count,
         "anomaly_count": anomaly_count,
         "emergency_stop_count": emergency_stop_count,
+        "hmac_mode": HMAC_MODE,
+        "hmac_valid_count": hmac_valid_count,
+        "hmac_failed_count": hmac_failed_count,
         "target_pressure": TARGET_PRESSURE,
         "max_safe_pressure": MAX_SAFE_PRESSURE,
         "absolute_max_pressure": ABSOLUTE_MAX_PRESSURE,
@@ -661,7 +759,8 @@ def update_sensor():
     SECURE /sensor endpoint - validates network data against local I2C sensor
 
     Security features:
-    - Cross-checks network claim against local I2C reading (rejects if >1.0 PSI difference)
+    - HMAC-SHA256 signature check with timestamp + replay protection (see HMAC_MODE)
+    - Cross-checks network claim against local I2C reading (rejects if > SENSOR_MISMATCH_THRESHOLD)
     - Rate limiting (max 2 Hz)
     - Rate-of-change validation (max 5.0 PSI/sec)
     - Range validation (0-100 PSI)
@@ -671,11 +770,37 @@ def update_sensor():
     global current_pressure_network, last_network_update, last_network_pressure
     global network_sensor_count, accepted_network_count, rejected_network_count
     global attack_detected, anomaly_count, last_attack_time
+    global hmac_valid_count, hmac_failed_count
 
     from flask import request
 
-    data = request.json
+    raw_body = request.get_data(cache=True)
     network_sensor_count += 1
+
+    # Validation 0: Message authentication (HMAC). Skipped entirely when HMAC_MODE == "off".
+    if HMAC_MODE != "off":
+        sig_ok, sig_reason = verify_signature(raw_body, request.headers)
+        if sig_ok:
+            hmac_valid_count += 1
+        else:
+            hmac_failed_count += 1
+            if HMAC_MODE == "enforce":
+                rejected_network_count += 1
+                attack_detected = True
+                last_attack_time = datetime.now()
+                log_to_wazuh("alert",
+                    f"ATTACK: Unauthenticated sensor data rejected ({sig_reason}) from {request.remote_addr}",
+                    "hmac_rejected")
+                return jsonify({
+                    "status": "rejected",
+                    "reason": "authentication_failed",
+                    "detail": sig_reason
+                }), 401
+            log_to_wazuh("warning",
+                f"HMAC monitor: signature check failed ({sig_reason}) from {request.remote_addr} - not enforced",
+                "hmac_monitor")
+
+    data = request.json
 
     claimed_pressure = data.get('pressure', None)
     source = data.get('source', 'unknown')
@@ -793,7 +918,9 @@ def main():
     print(f"  Absolute Max: {ABSOLUTE_MAX_PRESSURE} PSI")
     print(f"  Sensor Available: {SENSOR_AVAILABLE}")
     print(f"  Relays Available: {RELAYS_AVAILABLE}")
+    print(f"  HMAC mode: {HMAC_MODE} ({HMAC_CONFIG_NOTE}; key {'set' if HMAC_KEY else 'NOT set'})")
     print("=" * 60)
+    log_to_wazuh("info", f"HMAC mode: {HMAC_MODE} ({HMAC_CONFIG_NOTE}; key {'set' if HMAC_KEY else 'NOT set'})", "hmac_config")
     print("\nInitializing MQTT connection...")
     init_mqtt()
 
