@@ -4,12 +4,12 @@ Secure System - Balloon Control with Hardened Security
 Direct I²C sensor reading with Wazuh SIEM logging and input validation
 
 SECURITY FEATURES:
-  ✓ Direct I²C sensor reading (no network exposure)
-  ✓ Wazuh SIEM logging of all actions
-  ✓ Input validation and sanity checks
-  ✓ Redundant safety checks
-  ✓ Attack detection and alerting
-  ✓ Firewall isolation (VLAN30)
+  Direct I²C sensor reading (no network exposure)
+  Wazuh SIEM logging of all actions
+  Input validation and sanity checks
+  Redundant safety checks
+  Attack detection and alerting
+  Firewall isolation (VLAN30)
 
 Pi #6 (Secure System) - 10.30.0.25 (VLAN30)
 """
@@ -29,21 +29,21 @@ try:
     from adafruit_ads1x15.analog_in import AnalogIn
     SENSOR_AVAILABLE = True
 except ImportError:
-    print("⚠ Warning: ADS1115 library not available - sensor disabled (testing mode)")
+    print("Warning: ADS1115 library not available - sensor disabled (testing mode)")
     SENSOR_AVAILABLE = False
 
 try:
     import lib8relind
     RELAY8_AVAILABLE = True
 except ImportError:
-    print("⚠ Warning: lib8relind not installed - 8-relay HAT control disabled (testing mode)")
+    print("Warning: lib8relind not installed - 8-relay HAT control disabled (testing mode)")
     RELAY8_AVAILABLE = False
 
 try:
     import lib3relind
     RELAY40A_AVAILABLE = True
 except ImportError:
-    print("⚠ Warning: lib3relind not installed - 40A relay HAT control disabled (testing mode)")
+    print("Warning: lib3relind not installed - 40A relay HAT control disabled (testing mode)")
     RELAY40A_AVAILABLE = False
 
 RELAYS_AVAILABLE = RELAY8_AVAILABLE or RELAY40A_AVAILABLE
@@ -52,11 +52,11 @@ try:
     import paho.mqtt.client as mqtt
     MQTT_AVAILABLE = True
 except ImportError:
-    print("⚠ Warning: paho-mqtt not installed - MQTT publishing disabled")
+    print("Warning: paho-mqtt not installed - MQTT publishing disabled")
     MQTT_AVAILABLE = False
 
 # Configuration
-# Physical flow: Pump → UPSTREAM (R4) → INFLATE (R2) → DOWNSTREAM (R3) → Bottle
+# Physical flow: Pump UPSTREAM (R4) INFLATE (R2) DOWNSTREAM (R3) Bottle
 STACK = 0  # Relay HAT stack level
 RELAY_PUMP       = 1   # Air pump
 RELAY_INFLATE    = 2   # Main line control solenoid
@@ -64,12 +64,12 @@ RELAY_DOWNSTREAM = 3   # Closest to bottle (vent/deflate)
 RELAY_UPSTREAM   = 4   # Closer to pump (high-pressure relief)
 
 # DATAQ sensor constants (ADS1115 via BSS138 level shifter)
-# A0 = 100 PSI upstream sensor (2000361-100H) — upstream relief monitoring
-# A1 = 100 PSI downstream sensor (2000361-100H) — PRIMARY control sensor
+# A0 = 100 PSI upstream sensor (2000361-100H) upstream relief monitoring
+# A1 = 100 PSI downstream sensor (2000361-100H)  PRIMARY control sensor
 VOLTAGE_MIN = 0.5   # V at 0 PSI (both sensors)
 VOLTAGE_MAX = 4.5   # V at full scale (both sensors)
-PRESSURE_SENSOR_MAX_A0 = 100.0  # PSI full scale — channel A0 (upstream)
-PRESSURE_SENSOR_MAX_A1 = 100.0  # PSI full scale — channel A1 (downstream, primary)
+PRESSURE_SENSOR_MAX_A0 = 100.0  # PSI full scale channel A0 (upstream)
+PRESSURE_SENSOR_MAX_A1 = 100.0  # PSI full scale channel A1 (downstream, primary)
 
 # Pressure thresholds (PSI) - SAME AS VULNERABLE SYSTEM
 TARGET_PRESSURE = 25.0   # Target balloon pressure (demo baseline)
@@ -194,7 +194,7 @@ def set_relay(relay_num, state):
         log_to_wazuh("warning", "SAFETY: Blocked pump ON command during shutdown", "safety_shutdown")
         return
 
-    log_to_wazuh("info", f"Relay {relay_num} ({relay_name}) → {state_str}", "relay_control")
+    log_to_wazuh("info", f"Relay {relay_num} ({relay_name}) {state_str}", "relay_control")
 
     if RELAYS_AVAILABLE:
         try:
@@ -213,7 +213,7 @@ def set_relay(relay_num, state):
         except Exception as e:
             log_to_wazuh("error", f"Relay control failed: {e}", "relay_error")
     else:
-        print(f"  [RELAY {relay_num} {relay_name}] → {state_str}")
+        print(f"  [RELAY {relay_num} {relay_name}] {state_str}")
 
 def set_inflate_valve(state):
     """
@@ -286,10 +286,10 @@ def cleanup_on_exit(signum, frame):
     """Clean up relays when script exits - controlled depressurization"""
     global shutting_down, pump_running, inflate_valve_open, downstream_valve_open, upstream_valve_open
 
-    print("\n\n⚠ SHUTDOWN SIGNAL RECEIVED")
+    print("\n\n SHUTDOWN SIGNAL RECEIVED")
     shutting_down = True  # Signal control loop to stop (set_relay now blocks pump ON)
     time.sleep(0.7)  # Wait for control loop to exit
-    print("⚠ Starting depressurization sequence")
+    print("Starting depressurization sequence")
 
     # Step 1: Turn off pump
     print("  1. Pump OFF")
@@ -327,7 +327,7 @@ def cleanup_on_exit(signum, frame):
     upstream_valve_open = False
 
     log_to_wazuh("info", "Shutdown depressurization complete - all hardware OFF", "system_shutdown")
-    print("✓ Depressurization complete - all hardware OFF")
+    print("Depressurization complete - all hardware OFF")
     sys.exit(0)
 
 def emergency_shutdown(reason):
@@ -340,7 +340,7 @@ def emergency_shutdown(reason):
     log_to_wazuh("critical", f"EMERGENCY SHUTDOWN: {reason}", "emergency_stop")
 
     print("\n" + "=" * 60)
-    print("⚠️  EMERGENCY SHUTDOWN ACTIVATED")
+    print(" EMERGENCY SHUTDOWN ACTIVATED")
     print(f"   Reason: {reason}")
     print("=" * 60)
 
@@ -604,9 +604,9 @@ def init_mqtt():
         username.username_pw_set(MQTT_USER, MQTT_PASSWORD)
         username.connect(MQTT_BROKER, MQTT_PORT, 60)
         username.loop_start()
-        print(f"✓ Connected to MQTT broker at {MQTT_BROKER}:{MQTT_PORT}")
+        print(f"Connected to MQTT broker at {MQTT_BROKER}:{MQTT_PORT}")
     except Exception as e:
-        print(f"✗ MQTT connection failed: {e}")
+        print(f"MQTT connection failed: {e}")
         username = None
 
 def publish_mqtt(topic, payload):
@@ -658,7 +658,7 @@ def status():
 @app.route('/sensor', methods=['POST'])
 def update_sensor():
     """
-    ✓ SECURE /sensor endpoint - validates network data against local I2C sensor
+    SECURE /sensor endpoint - validates network data against local I2C sensor
 
     Security features:
     - Cross-checks network claim against local I2C reading (rejects if >1.0 PSI difference)
@@ -781,12 +781,12 @@ def main():
     print("  Pi #6 (10.30.0.25) - VLAN30 (Secure Network)")
     print("=" * 60)
     print("\nSECURITY FEATURES:")
-    print("  ✓ Direct I²C sensor reading (no network exposure)")
-    print("  ✓ Wazuh SIEM logging enabled")
-    print("  ✓ Input validation and anomaly detection")
-    print("  ✓ Attack detection system")
-    print("  ✓ Redundant safety checks")
-    print("  ✓ Firewall isolation")
+    print("  Direct I²C sensor reading (no network exposure)")
+    print("  Wazuh SIEM logging enabled")
+    print("  Input validation and anomaly detection")
+    print("  Attack detection system")
+    print("  Redundant safety checks")
+    print("  Firewall isolation")
     print("=" * 60)
     print(f"  Target Pressure: {TARGET_PRESSURE} PSI")
     print(f"  Max Safe Pressure: {MAX_SAFE_PRESSURE} PSI")
@@ -806,7 +806,7 @@ def main():
     set_relay(RELAY_INFLATE, False)
     set_relay(RELAY_DOWNSTREAM, False)
     set_relay(RELAY_UPSTREAM, False)
-    print("✓ All relays initialized to OFF")
+    print("All relays initialized to OFF")
     time.sleep(0.5)  # Let hardware settle before starting control loop
 
     print("\nStarting Flask status server on port 5000 (all interfaces)...")
