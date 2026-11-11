@@ -50,7 +50,7 @@ except ImportError:
 app = Flask(__name__)
 
 # MQTT Configuration
-MQTT_BROKER = "localhost"
+MQTT_BROKER = "10.30.0.51"
 MQTT_PORT = 1883
 MQTT_TOPIC_PREFIX = "balloon/vulnerable"
 username = None
@@ -63,6 +63,7 @@ def init_mqtt():
 
     try:
         username = mqtt.Client(client_id="balloon_vulnerable_control")
+        username.username_pw_set("username", "password")
         username.connect(MQTT_BROKER, MQTT_PORT, 60)
         username.loop_start()
         print(f"✓ Connected to MQTT broker at {MQTT_BROKER}:{MQTT_PORT}")
@@ -119,6 +120,75 @@ OVERPRESSURE_THRESHOLD = 3  # Require 3 consecutive readings > 35 PSI
 venting_mode = False  # Once triggered, stay in venting mode until pressure drops
 venting_cooldown_until = None  # Timestamp when cooldown expires (prevent pump restart immediately after venting)
 VENTING_COOLDOWN_SECONDS = 3.0  # Wait 3 seconds after venting before allowing pump to restart
+
+# ---------------------------------------------------------------------------
+# Post-burst pump cutoff (added 2026-11-10)
+#
+# After the bottle bursts, the real sensor_publisher keeps POSTing the now-open
+# bottle's ~0 PSI, so the control loop keeps the pump running forever trying to
+# reach TARGET_PRESSURE. This is equipment protection that runs AFTER the burst;
+# it does NOT validate /sensor input, so the intentional spoofing vulnerability
+# is unchanged and the attack still bursts the bottle.
+#
+# Primary trigger (matches the demo: burst -> presenter stops the attack):
+#   an attack has occurred this run, the attack has since stopped (source is the
+#   real sensor again), the pump is running, and real pressure stays below
+#   BURST_LOW_PSI for BURST_CONFIRM_SECONDS -> the vessel can't hold pressure
+#   (burst). An intact bottle climbs past BURST_LOW_PSI within a second or two,
+#   so a normal fill never trips it.
+# Backstop: pump running continuously for PUMP_MAX_RUN_SECONDS.
+#
+# Latched into demo_complete: pump stays off, no auto-restart, until POST /reset
+# or a service restart.
+ATTACK_SOURCES = ("attacker", "attacker-single")
+BURST_LOW_PSI = 15.0           # "can't build pressure" threshold (well below 25 target)
+BURST_CONFIRM_SECONDS = 4.0    # how long pressure must stay pinned low while pumping
+PUMP_MAX_RUN_SECONDS = 120.0   # backstop: max continuous pump run
+
+demo_complete = False      # latched when the post-burst cutoff fires
+attack_seen = False        # True once an attack has been seen this run (arms the detector)
+pump_on_since = None       # timestamp the pump last turned on (None if off)
+low_pressure_since = None  # timestamp pressure first dropped below BURST_LOW_PSI (continuous)
+
+def demo_cutoff_decision(now, pump_running, pressure_reading, source, attack_ever,
+                         pump_on_since, low_pressure_since):
+    """Pure decision for the post-burst pump cutoff (no globals, unit-testable).
+
+    Returns (latch, reason, new_pump_on_since, new_low_pressure_since).
+    latch=True means: declare the demo complete and stop the pump.
+    """
+    # Track continuous pump-on time.
+    if pump_running:
+        if pump_on_since is None:
+            pump_on_since = now
+    else:
+        pump_on_since = None
+
+    # The detector is only armed once an attack has occurred this run, so the
+    # pre-attack manual fill can never trip it.
+    if not attack_ever:
+        return False, None, pump_on_since, None
+
+    attack_active = source in ATTACK_SOURCES
+
+    # Primary: real sensor back, pump running, pressure pinned low = burst.
+    if pump_running and not attack_active and pressure_reading < BURST_LOW_PSI:
+        if low_pressure_since is None:
+            low_pressure_since = now
+        elif (now - low_pressure_since) >= BURST_CONFIRM_SECONDS:
+            return (True,
+                    f"vessel failed to build pressure: real sensor {pressure_reading:.1f} PSI "
+                    f"< {BURST_LOW_PSI} for {BURST_CONFIRM_SECONDS:.0f}s while pumping (burst)",
+                    pump_on_since, low_pressure_since)
+    else:
+        low_pressure_since = None
+
+    # Backstop: pump has run continuously too long (e.g. attack left running).
+    if pump_running and pump_on_since is not None and (now - pump_on_since) >= PUMP_MAX_RUN_SECONDS:
+        return (True, f"pump run watchdog: {PUMP_MAX_RUN_SECONDS:.0f}s continuous run",
+                pump_on_since, low_pressure_since)
+
+    return False, None, pump_on_since, low_pressure_since
 
 # Statistics
 sensor_update_count = 0
@@ -223,6 +293,7 @@ def control_loop():
     """Main control loop - runs in background thread"""
     global pump_running, inflate_valve_open, downstream_valve_open, emergency_stop, upstream_valve_open, shutting_down
     global overpressure_count, venting_mode, venting_cooldown_until
+    global demo_complete, attack_seen, pump_on_since, low_pressure_since
 
     print("Control loop started")
     last_mqtt_publish = 0
@@ -242,14 +313,15 @@ def control_loop():
                 "pump": pump_running,
                 "inflate": inflate_valve_open,
                 "downstream": downstream_valve_open,
-                "upstream": upstream_valve_open
+                "upstream": upstream_valve_open,
+                "demo_complete": demo_complete
             })
             publish_mqtt("sensor_source", {"source": last_sensor_source, "count": sensor_update_count})
             last_mqtt_publish = now
 
         # UPSTREAM SAFETY RELIEF - Independent safety check (runs before all other logic)
         # Prevents dangerous upstream pressure buildup (saw 89.9 PSI in testing)
-        if current_pressure_upstream > 70.0:
+        if current_pressure_upstream > 80.0:
             if not upstream_valve_open:
                 print(f"⚠ UPSTREAM OVERPRESSURE: {current_pressure_upstream:.2f} PSI - Opening upstream relief valve")
                 set_relay(RELAY_UPSTREAM, True)
@@ -274,6 +346,17 @@ def control_loop():
                 downstream_valve_open = False
                 upstream_valve_open = False
             time.sleep(0.5)
+            continue
+
+        # DEMO COMPLETE latch: bottle burst and attack stopped - keep the pump
+        # off and idle here. Cleared by POST /reset or a service restart.
+        if demo_complete:
+            if pump_running:
+                for _ in range(3):
+                    set_relay(RELAY_PUMP, False)
+                    time.sleep(0.01)
+                pump_running = False
+            time.sleep(0.2)
             continue
 
         # Check for stale sensor data - stop pump and close all solenoids
@@ -322,6 +405,22 @@ def control_loop():
         pressure_reading = pressure_samples[2]  # Median (middle value - index 2 of 0-4)
 
         # Use pressure_reading for all control decisions below
+
+        # ---- Post-burst pump cutoff (equipment protection, not input validation) ----
+        if last_sensor_source in ATTACK_SOURCES:
+            attack_seen = True  # arm the detector once an attack has occurred this run
+        latch, cutoff_reason, pump_on_since, low_pressure_since = demo_cutoff_decision(
+            time.time(), pump_running, pressure_reading, last_sensor_source,
+            attack_seen, pump_on_since, low_pressure_since)
+        if latch:
+            print(f"✓ DEMO COMPLETE - {cutoff_reason}. Latching pump OFF.")
+            demo_complete = True
+            for _ in range(3):
+                set_relay(RELAY_PUMP, False)
+                time.sleep(0.01)
+            pump_running = False
+            continue
+        # ----------------------------------------------------------------------------
 
         # VENTING MODE: Pressure-based venting (upstream closed to prevent pump backflow)
         if venting_mode:
@@ -556,6 +655,7 @@ def get_status():
         "anomaly_count": 0,  # Vulnerable system does no anomaly detection
         "emergency_stop_count": 1 if emergency_stop else 0,
         "last_sensor_source": last_sensor_source,
+        "demo_complete": demo_complete,
         "target_pressure": TARGET_PRESSURE,
         "max_safe_pressure": MAX_SAFE_PRESSURE,
         "absolute_max_pressure": MAX_SAFE_PRESSURE,
@@ -651,9 +751,13 @@ def emergency_stop_api():
 
 @app.route('/reset', methods=['POST'])
 def reset():
-    """Reset emergency stop"""
-    global emergency_stop
+    """Reset emergency stop and clear the post-burst demo-complete latch"""
+    global emergency_stop, demo_complete, attack_seen, pump_on_since, low_pressure_since
     emergency_stop = False
+    demo_complete = False
+    attack_seen = False
+    pump_on_since = None
+    low_pressure_since = None
     return jsonify({"status": "reset_complete"})
 
 if __name__ == "__main__":
