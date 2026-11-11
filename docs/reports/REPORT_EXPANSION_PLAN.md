@@ -578,7 +578,7 @@
 ## IMPLEMENTATION PRIORITY
 
 ### Phase 1: High-Value, Low-Effort Expansions (Do First)
-1. **Appendix J: Balloon Demo Source Code** - You already have this, just copy from balloon-demo/scripts/
+1. **Appendix J: Balloon Demo Source Code** - You already have this, just copy from src/balloon-demo/scripts/
 2. **Appendix K: Troubleshooting Guide** - Copy from TROUBLESHOOTING_HISTORY.md
 3. **Appendix L: Startup Procedures** - Copy from SYSTEM_STARTUP_GUIDE.md
 4. **Appendix H: VM Installation** - Extract from NETWORK_SETUP_PROGRESS_PART{1,2,3}.md
@@ -607,9 +607,9 @@
 - `WIRING_DIAGRAMS_UPDATED_2026-02-11.md` - Appendix M diagrams
 - `VM_SERVICES_STATUS.md` - Section 10.8 VM details
 - `SECURITY_HARDENING_2026-02-13.md` - Section 11.9 penetration testing
-- `balloon-demo/scripts/*.py` - Appendix J source code
-- `balloon-demo/services/*.service` - Appendix H systemd configs
-- `hospital scripts/heartrate/*.py` - Appendix D (already partially done)
+- `src/balloon-demo/scripts/*.py` - Appendix J source code
+- `src/balloon-demo/services/*.service` - Appendix H systemd configs
+- `src/hospital/heartrate/*.py` - Appendix D (already partially done)
 
 ### Commands to Extract Content
 ```bash

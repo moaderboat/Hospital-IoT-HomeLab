@@ -258,4 +258,4 @@ Internet → Dream Router 7 (Home ISP)
 **Related Documents:**
 - VM_SERVICES_STATUS.md - Virtual machine configurations
 - RASPBERRY_PI_STATUS.md - Raspberry Pi configurations
-- balloon-demo/CURRENT_STATUS_2026-02-06.md - Balloon demo specific status
+- src/balloon-demo/CURRENT_STATUS_2026-02-06.md - Balloon demo specific status

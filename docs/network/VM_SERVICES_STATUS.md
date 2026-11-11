@@ -505,7 +505,7 @@ sudo systemctl restart suricata
 **Related Documents:**
 - NETWORK_INFRASTRUCTURE.md - Network topology and firewall rules
 - RASPBERRY_PI_STATUS.md - Raspberry Pi configurations
-- balloon-demo/CURRENT_STATUS_2026-02-06.md - Balloon demo status
+- src/balloon-demo/CURRENT_STATUS_2026-02-06.md - Balloon demo status
 
 **Recent Changes (2026-02-09):**
 - Added Suricata IDS/IPS VM (10.30.0.59) with custom balloon demo detection rules
