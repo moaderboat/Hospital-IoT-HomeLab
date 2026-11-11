@@ -335,12 +335,12 @@ Know what the demo **really** needs, and drop the rest.
 
 | Component | Starting point |
 |---|---|
-| Node-RED | `backups\nodered_all_flows_2026-11.json` (from 1A) → Import; `balloon-demo/nodered/*.json`; ECG code in `hospital scripts/ecg_sweep_template.html` |
+| Node-RED | `backups\nodered_all_flows_2026-11.json` (from 1A) → Import; `src/balloon-demo/nodered/*.json`; ECG code in `src/hospital/ecg_sweep_template.html` |
 | Grafana | Dashboard JSON from 1A + `grafana_ids_dashboard.json` → Import |
 | Mirth | Channel XML from 1A → Import Channel (listener port **8081**) |
 | HAPI FHIR | `hapi_inspect.json` from 1A |
 | Keycloak | Realm export from 1A; client list in `NETWORK_SETUP_PROGRESS_PART1.md` |
-| Pi services | `balloon-demo/services/*.service`, `balloon-demo/services/README.md` |
+| Pi services | `src/balloon-demo/services/*.service`, `src/balloon-demo/services/README.md` |
 | UDM-SE / switch | `.unifi` backup from 1A |
 
 ---
@@ -395,4 +395,4 @@ UDM-SE firewall exceptions (all must be priority **< 20001**, before `BLOCK_VLAN
 | Uplink native network | Default on both ends | `BALLOON_DEMO_NETWORK_CONFIG.md` says VLAN 30 |
 | Attack rate | `--rate 0.01` = 100 Hz per target | Refresher, hardware list, CLAUDE.md use `--rate 0.1` (10 Hz) |
 | Relief valve "saves" the bottle | It doesn't (70 PSI > ~60 PSI average burst) | `QueenCityCon_Presentation.md` demo script |
-| Heartrate unit files | Deployed units use network-online + 15 s sleep and a Desktop path | Repo copies in `hospital scripts/heartrate/` are stale |
+| Heartrate unit files | Deployed units use network-online + 15 s sleep and a Desktop path | Repo copies in `src/hospital/heartrate/` are stale |

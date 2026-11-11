@@ -206,7 +206,7 @@ Note: `SYSTEM_STARTUP_GUIDE.md` says the Secure Pi runs `balloon-control-api.ser
 
 ### Step 5: Verify
 1. **Node-RED** at http://10.30.0.52:1880/ui should show 5 HR gauges, 5 scrolling ECG traces (Pi #4's is irregular and turns red while above 110 BPM; threshold is `TACHY_BPM` in the template), 4 pressure gauges, and the Security Status panel in green ("SYSTEM SECURE").
-   - The ECG tiles were replaced on 2026-11-01 with a canvas sweep monitor (dashboard `template` node, code in `hospital scripts/ecg_sweep_template.html`, the same code for all 5). It's wired from the **switch** outputs, because it needs the full payload (`bpm`, `pi_id`, `anomaly_type`). The waveform is synthetic but driven by live BPM. It flatlines with "--" if a Pi sends nothing for 3 s.
+   - The ECG tiles were replaced on 2026-11-01 with a canvas sweep monitor (dashboard `template` node, code in `src/hospital/ecg_sweep_template.html`, the same code for all 5). It's wired from the **switch** outputs, because it needs the full payload (`bpm`, `pi_id`, `anomaly_type`). The waveform is synthetic but driven by live BPM. It flatlines with "--" if a Pi sends nothing for 3 s.
    - The old "Generate ECG" functions sat after `set msg payload` (which reduces the payload to just the number), so they never saw the BPM and drew every Pi at a fixed 70.
    - P1 History's chart had been set to UTC and a 2-day window. It was fixed on 2026-11-01 to match the other charts.
 2. **Grafana** at http://10.30.0.53:3000 should show all 5 Pis, the Pi #4 BPM tile turning red above 110 and reading "TACHYCARDIA" above 120 (matches the Node-RED ECG tiles), and an IDS dashboard ready to go.
@@ -256,7 +256,7 @@ Secure Pi rejections → Wazuh
 
 ## 6. Scripts & services
 
-### Balloon demo (`balloon-demo/scripts/`, deployed to `/home/username/balloon-demo/scripts/` on the Pis)
+### Balloon demo (`src/balloon-demo/scripts/`, deployed to `/home/username/balloon-demo/scripts/` on the Pis)
 | Script | Runs on | Service | What it does |
 |---|---|---|---|
 | `balloon_control_api_vulnerable.py` | Vulnerable Pi | `balloon-control-api.service` | Flask :5000, no auth, no validation, no rate limit (**intentional, don't "fix"**). 25 PSI target, median-of-5 sampling, hysteresis, relief valve at 70 PSI upstream, vents above 35 PSI after an attack. MQTT at 10 Hz. |
@@ -275,12 +275,12 @@ python3 attack_spoof.py --continuous --pressure 0.0         # vulnerable target 
 ```
 Ctrl+C stops it. Note that `--pressure` defaults to 20.0, so pass `0.0` explicitly. Expected result: the vulnerable system climbs past 25 PSI and the bottle bursts, while the secure system rejects the data (|0.0 − 25| > 10.0 threshold). The Security Status panel turns red and pulses, and it clears about 1 second after the attack stops.
 
-### Hospital (`hospital scripts/heartrate/`)
+### Hospital (`src/hospital/heartrate/`)
 `HeartRate{1..5}Monitor.py` runs as `heartrate{1..5}.service` on each Pi, from `/home/r-pi-N/`, using paho-mqtt.
 
 ### Deploying an updated unit file
 ```bash
-sudo cp balloon-demo/services/*.service /etc/systemd/system/
+sudo cp src/balloon-demo/services/*.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl restart <service>
 sudo journalctl -u <service> -f      # live logs
