@@ -58,3 +58,5 @@ Thumbs.db
 # Python bytecode (generated from the .py files, which ARE tracked)
 __pycache__/
 *.pyc
+
+Queen_City_Con/CON_CREDENTIALS.*
