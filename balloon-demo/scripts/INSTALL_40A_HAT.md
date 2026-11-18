@@ -71,7 +71,7 @@ Expected output from `i2cdetect -y 1`:
 ```
 - `0x27` = 8-RELAYS HAT
 - `0x48` = ADS1115 pressure sensor ADC
-- `0x6c` = 40A relay HAT (lib3relind)
+- `0x60` = 40A relay HAT (lib3relind). *Corrected 2026-11-17: an earlier version of this guide said `0x6c`. The HAT in this build is at `0x60` (confirmed in TROUBLESHOOTING_HISTORY.md, 2026-03-17, and CONFERENCE_REFRESHER.md).*
 
 ## Deploy Updated Script
 
@@ -152,7 +152,7 @@ python3 -c "import lib8relind; lib8relind.set_all(0, 0)"
 
 **40A HAT not detected:**
 - Check GPIO ribbon cable connection
-- Run `i2cdetect -y 1` - should see device at 0x6c
+- Run `i2cdetect -y 1` - should see device at 0x60
 - Verify 12V power connected to HAT
 
 **Library import error:**

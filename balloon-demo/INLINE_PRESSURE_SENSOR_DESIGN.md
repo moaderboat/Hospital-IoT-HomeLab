@@ -3,6 +3,10 @@
 **Date:** 2026-02-08
 **Status:** Design finalized, hardware ordered, software updates pending
 
+> **Note (2026-11-17):** This design predates the hardware. On the DATAQ sensors as built, the
+> signal wire is **yellow** (red = 12 V+, black = GND), per WIRING_DIAGRAMS_UPDATED_2026-02-11.md
+> and CONFERENCE_REFRESHER.md. Where this doc says "white" for the signal wire, read yellow.
+
 ---
 
 ## Overview
@@ -54,7 +58,7 @@ This document describes the inline pressure sensor system that replaces the orig
 **Pinout (6-pin Molex):**
 1. +Excitation (red) - 8-30 VDC power supply
 2. -Excitation (black) - Ground
-3. +Signal (white) - 0.5-4.5V output
+3. +Signal (white) - 0.5-4.5V output *(as built: the signal wire is **yellow**, see note at top)*
 4. -Signal (green) - Signal ground
 5. Shield (bare wire) - Optional EMI shield
 6. Not used
@@ -86,7 +90,7 @@ Raspberry Pi GPIO pins can only read digital signals (0V or 3.3V). The DATAQ sen
 - SDA: I²C data (Pi Pin 3 via level shifter)
 - ADDR: Address select (connect to GND for 0x48)
 - ALRT: Alert output (not used)
-- A0: Analog input channel 0 (DATAQ +Signal white wire)
+- A0: Analog input channel 0 (DATAQ +Signal white wire) *(as built: the signal wire is **yellow**, see note at top)*
 - A1-A3: Unused analog inputs
 - GND: Analog ground (DATAQ -Signal green wire)
 
@@ -490,7 +494,7 @@ sudo i2cdetect -y 1
 
 **Solutions:**
 1. Ensure all grounds connected (Pi, ADC, 12V PSU)
-2. Twist signal wires together (white + green)
+2. Twist signal wires together (white + green) *(as built: the signal wire is **yellow**, see note at top)*
 3. Connect shield wire (bare) to GND
 4. Keep sensor cable away from power lines and motors
 5. Add 0.1µF capacitor between +Signal and -Signal at ADC input
@@ -506,7 +510,7 @@ sudo i2cdetect -y 1
 **Cause:** Wrong ADC channel or air leak
 
 **Check:**
-1. White wire (+Signal) connected to A0 (not A1, A2, or A3)
+1. White wire (+Signal) connected to A0 (not A1, A2, or A3) *(as built: the signal wire is **yellow**, see note at top)*
 2. Code specifies `ADS.P0` (not P1, P2, P3)
 3. NPT fittings tight (no air leaks)
 4. Pump actually running (check relay operation)
