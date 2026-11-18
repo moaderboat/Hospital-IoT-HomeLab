@@ -614,7 +614,7 @@ Internet → Dream Router 7 (Home ISP)
    - ✓ Web interface accessible at https://10.30.0.54:8443
    - ✓ Initial admin setup completed
    - ✓ **FHIR transformation channel fully operational** - `HeartRate_FHIR_Final`
-     - HTTP Listener source on port 9999 (receives JSON from Node-RED)
+     - HTTP Listener source on port 9999 (receives JSON from Node-RED) *(later changed to 8081; 8081 is current, see CONFERENCE_REFRESHER.md)*
      - JavaScript source transformer (heart rate → FHIR R4 Observation resources)
      - HTTP Sender destination (POSTs to HAPI FHIR server)
      - JavaScript Writer destination (saves to `/tmp/fhir-observations/`)
@@ -622,7 +622,7 @@ Internet → Dream Router 7 (Home ISP)
    - ✓ **Node-RED integration configured**:
      - MQTT subscriber receives heart rate data from all 5 Raspberry Pis
      - Rate limiter prevents overwhelming Mirth (1 msg/second)
-     - HTTP request node sends to Mirth at `http://10.30.0.54:9999`
+     - HTTP request node sends to Mirth at `http://10.30.0.54:9999` *(later changed to 8081; 8081 is current, see CONFERENCE_REFRESHER.md)*
      - Flow: MQTT (hospital/heartrate/#) → Rate Limit → HTTP → Mirth
    - ✓ **FHIR output validated**:
      - Proper FHIR R4 Observation resources generated
@@ -1217,7 +1217,7 @@ ping 10.30.0.1 && ping 10.30.0.44 && ping 10.30.0.45 && ping 10.30.0.50 && ping 
   - VM created and operational with Mirth Connect 4.5.2
   - Web interface at https://10.30.0.54:8443
   - Channel `HeartRate_FHIR_Final` successfully deployed and running
-  - HTTP Listener on port 9999 receiving data from Node-RED
+  - HTTP Listener on port 9999 receiving data from Node-RED *(later changed to 8081; 8081 is current, see CONFERENCE_REFRESHER.md)*
   - Real-time FHIR R4 transformation: Heart rate data → Observation resources
   - FHIR files saved to `/tmp/fhir-observations/`
   - HTTP Sender posting to HAPI FHIR server
