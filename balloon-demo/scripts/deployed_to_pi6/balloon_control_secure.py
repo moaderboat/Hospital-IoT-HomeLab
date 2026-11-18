@@ -4,12 +4,12 @@ Secure System - Balloon Control with Hardened Security
 Direct I²C sensor reading with Wazuh SIEM logging and input validation
 
 SECURITY FEATURES:
-  ✓ Direct I²C sensor reading (no network exposure)
-  ✓ Wazuh SIEM logging of all actions
-  ✓ Input validation and sanity checks
-  ✓ Redundant safety checks
-  ✓ Attack detection and alerting
-  ✓ Firewall isolation (VLAN30)
+  Direct I²C sensor reading (no network exposure)
+  Wazuh SIEM logging of all actions
+  Input validation and sanity checks
+  Redundant safety checks
+  Attack detection and alerting
+  Firewall isolation (VLAN30)
 
 Pi #6 (Secure System) - 10.30.0.25 (VLAN30)
 """
@@ -19,6 +19,8 @@ import threading
 import syslog
 import signal
 import sys
+import hmac
+import hashlib
 from datetime import datetime
 from flask import Flask, jsonify
 
@@ -29,21 +31,21 @@ try:
     from adafruit_ads1x15.analog_in import AnalogIn
     SENSOR_AVAILABLE = True
 except ImportError:
-    print("⚠ Warning: ADS1115 library not available - sensor disabled (testing mode)")
+    print("Warning: ADS1115 library not available - sensor disabled (testing mode)")
     SENSOR_AVAILABLE = False
 
 try:
     import lib8relind
     RELAY8_AVAILABLE = True
 except ImportError:
-    print("⚠ Warning: lib8relind not installed - 8-relay HAT control disabled (testing mode)")
+    print("Warning: lib8relind not installed - 8-relay HAT control disabled (testing mode)")
     RELAY8_AVAILABLE = False
 
 try:
     import lib3relind
     RELAY40A_AVAILABLE = True
 except ImportError:
-    print("⚠ Warning: lib3relind not installed - 40A relay HAT control disabled (testing mode)")
+    print("Warning: lib3relind not installed - 40A relay HAT control disabled (testing mode)")
     RELAY40A_AVAILABLE = False
 
 RELAYS_AVAILABLE = RELAY8_AVAILABLE or RELAY40A_AVAILABLE
@@ -52,11 +54,11 @@ try:
     import paho.mqtt.client as mqtt
     MQTT_AVAILABLE = True
 except ImportError:
-    print("⚠ Warning: paho-mqtt not installed - MQTT publishing disabled")
+    print("Warning: paho-mqtt not installed - MQTT publishing disabled")
     MQTT_AVAILABLE = False
 
 # Configuration
-# Physical flow: Pump → UPSTREAM (R4) → INFLATE (R2) → DOWNSTREAM (R3) → Bottle
+# Physical flow: Pump UPSTREAM (R4) INFLATE (R2) DOWNSTREAM (R3) Bottle
 STACK = 0  # Relay HAT stack level
 RELAY_PUMP       = 1   # Air pump
 RELAY_INFLATE    = 2   # Main line control solenoid
@@ -64,12 +66,12 @@ RELAY_DOWNSTREAM = 3   # Closest to bottle (vent/deflate)
 RELAY_UPSTREAM   = 4   # Closer to pump (high-pressure relief)
 
 # DATAQ sensor constants (ADS1115 via BSS138 level shifter)
-# A0 = 100 PSI upstream sensor (2000361-100H) — upstream relief monitoring
-# A1 = 100 PSI downstream sensor (2000361-100H) — PRIMARY control sensor
+# A0 = 100 PSI upstream sensor (2000361-100H) upstream relief monitoring
+# A1 = 100 PSI downstream sensor (2000361-100H)  PRIMARY control sensor
 VOLTAGE_MIN = 0.5   # V at 0 PSI (both sensors)
 VOLTAGE_MAX = 4.5   # V at full scale (both sensors)
-PRESSURE_SENSOR_MAX_A0 = 100.0  # PSI full scale — channel A0 (upstream)
-PRESSURE_SENSOR_MAX_A1 = 100.0  # PSI full scale — channel A1 (downstream, primary)
+PRESSURE_SENSOR_MAX_A0 = 100.0  # PSI full scale channel A0 (upstream)
+PRESSURE_SENSOR_MAX_A1 = 100.0  # PSI full scale channel A1 (downstream, primary)
 
 # Pressure thresholds (PSI) - SAME AS VULNERABLE SYSTEM
 TARGET_PRESSURE = 25.0   # Target balloon pressure (demo baseline)
@@ -110,6 +112,96 @@ emergency_stop_count = 0
 # Attack detection clearing
 last_attack_time = None  # Track when last attack was detected
 ATTACK_CLEAR_TIMEOUT = 1.0  # Seconds of clean operation before clearing flag
+
+# ---------------------------------------------------------------------------
+# HMAC message authentication for /sensor (added 2026-11-10)
+#
+# The sensor publisher signs every reading with a shared secret key. The
+# signature covers the timestamp and the exact request body:
+#     X-Timestamp: <unix time, 6 decimals>
+#     X-Signature: hex(HMAC-SHA256(key, "<timestamp>." + body))
+#
+# Config file (never committed to git):
+#     /etc/balloon-demo/hmac.conf   owner username, chmod 600
+#     MODE=off | monitor | enforce
+#     KEY=<64 hex characters>
+#     MAX_SKEW=5            (seconds a signed reading stays valid)
+#
+#   off      - no checking at all; identical to the pre-HMAC code
+#              (this is also what happens if the file is missing)
+#   monitor  - check and log every signature, but reject nothing
+#   enforce  - reject any reading without a valid, fresh signature
+#
+# Rollback: set MODE=off and restart balloon-control-secure.
+# ---------------------------------------------------------------------------
+HMAC_CONFIG_PATH = "/etc/balloon-demo/hmac.conf"
+
+def load_hmac_config(path=HMAC_CONFIG_PATH):
+    """Read hmac.conf. Returns (mode, key_bytes, max_skew_seconds, note)."""
+    cfg = {"MODE": "off", "KEY": "", "MAX_SKEW": "5"}
+    note = f"loaded {path}"
+    try:
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                cfg[k.strip().upper()] = v.strip()
+    except FileNotFoundError:
+        note = f"{path} not found"
+    except Exception as e:
+        note = f"{path} unreadable ({e})"
+
+    mode = cfg["MODE"].lower()
+    if mode not in ("off", "monitor", "enforce"):
+        note += f"; unknown MODE '{mode}', using off"
+        mode = "off"
+    try:
+        max_skew = float(cfg["MAX_SKEW"])
+    except ValueError:
+        max_skew = 5.0
+    return mode, cfg["KEY"].encode(), max_skew, note
+
+HMAC_MODE, HMAC_KEY, HMAC_MAX_SKEW, HMAC_CONFIG_NOTE = load_hmac_config()
+hmac_valid_count = 0       # readings with a valid signature
+hmac_failed_count = 0      # readings with a missing/invalid/stale/replayed signature
+_last_signed_ts = 0.0      # newest accepted timestamp (replay protection)
+_hmac_lock = threading.Lock()
+
+def verify_signature(raw_body, headers):
+    """
+    Check the HMAC signature on a /sensor request.
+    Returns (ok, reason). reason is a short code used in logs and responses.
+    """
+    global _last_signed_ts
+
+    if not HMAC_KEY:
+        return False, "no_key_configured"   # fail closed
+
+    sig = headers.get("X-Signature", "")
+    ts_str = headers.get("X-Timestamp", "")
+    if not sig or not ts_str:
+        return False, "missing_signature"
+
+    try:
+        ts = float(ts_str)
+    except ValueError:
+        return False, "bad_timestamp"
+
+    if abs(time.time() - ts) > HMAC_MAX_SKEW:
+        return False, "stale_timestamp"
+
+    expected = hmac.new(HMAC_KEY, ts_str.encode() + b"." + raw_body, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected.encode(), sig.strip().lower().encode()):
+        return False, "bad_signature"
+
+    with _hmac_lock:
+        if ts <= _last_signed_ts:
+            return False, "replay"
+        _last_signed_ts = ts
+
+    return True, "OK"
 
 def voltage_to_psi(voltage, sensor_max_psi):
     """Convert DATAQ sensor voltage to PSI. sensor_max_psi = 15.0 or 30.0"""
@@ -194,7 +286,7 @@ def set_relay(relay_num, state):
         log_to_wazuh("warning", "SAFETY: Blocked pump ON command during shutdown", "safety_shutdown")
         return
 
-    log_to_wazuh("info", f"Relay {relay_num} ({relay_name}) → {state_str}", "relay_control")
+    log_to_wazuh("info", f"Relay {relay_num} ({relay_name}) {state_str}", "relay_control")
 
     if RELAYS_AVAILABLE:
         try:
@@ -213,7 +305,7 @@ def set_relay(relay_num, state):
         except Exception as e:
             log_to_wazuh("error", f"Relay control failed: {e}", "relay_error")
     else:
-        print(f"  [RELAY {relay_num} {relay_name}] → {state_str}")
+        print(f"  [RELAY {relay_num} {relay_name}] {state_str}")
 
 def set_inflate_valve(state):
     """
@@ -286,10 +378,10 @@ def cleanup_on_exit(signum, frame):
     """Clean up relays when script exits - controlled depressurization"""
     global shutting_down, pump_running, inflate_valve_open, downstream_valve_open, upstream_valve_open
 
-    print("\n\n⚠ SHUTDOWN SIGNAL RECEIVED")
+    print("\n\n SHUTDOWN SIGNAL RECEIVED")
     shutting_down = True  # Signal control loop to stop (set_relay now blocks pump ON)
     time.sleep(0.7)  # Wait for control loop to exit
-    print("⚠ Starting depressurization sequence")
+    print("Starting depressurization sequence")
 
     # Step 1: Turn off pump
     print("  1. Pump OFF")
@@ -327,7 +419,7 @@ def cleanup_on_exit(signum, frame):
     upstream_valve_open = False
 
     log_to_wazuh("info", "Shutdown depressurization complete - all hardware OFF", "system_shutdown")
-    print("✓ Depressurization complete - all hardware OFF")
+    print("Depressurization complete - all hardware OFF")
     sys.exit(0)
 
 def emergency_shutdown(reason):
@@ -340,7 +432,7 @@ def emergency_shutdown(reason):
     log_to_wazuh("critical", f"EMERGENCY SHUTDOWN: {reason}", "emergency_stop")
 
     print("\n" + "=" * 60)
-    print("⚠️  EMERGENCY SHUTDOWN ACTIVATED")
+    print(" EMERGENCY SHUTDOWN ACTIVATED")
     print(f"   Reason: {reason}")
     print("=" * 60)
 
@@ -569,6 +661,9 @@ def sensor_loop():
                     "network_sensor_count": network_sensor_count,
                     "accepted_network_count": accepted_network_count,
                     "rejected_network_count": rejected_network_count,
+                    "hmac_mode": HMAC_MODE,
+                    "hmac_valid_count": hmac_valid_count,
+                    "hmac_failed_count": hmac_failed_count,
                     "timestamp": datetime.now().isoformat()
                 })
 
@@ -604,9 +699,9 @@ def init_mqtt():
         username.username_pw_set(MQTT_USER, MQTT_PASSWORD)
         username.connect(MQTT_BROKER, MQTT_PORT, 60)
         username.loop_start()
-        print(f"✓ Connected to MQTT broker at {MQTT_BROKER}:{MQTT_PORT}")
+        print(f"Connected to MQTT broker at {MQTT_BROKER}:{MQTT_PORT}")
     except Exception as e:
-        print(f"✗ MQTT connection failed: {e}")
+        print(f"MQTT connection failed: {e}")
         username = None
 
 def publish_mqtt(topic, payload):
@@ -623,6 +718,21 @@ def publish_mqtt(topic, payload):
         pass
 
 app = Flask(__name__)
+
+@app.route('/')
+def root():
+    """
+    System-info endpoint. Read-only, no hardware. Mirrors the vulnerable
+    system's root route so the attack script's reachability preflight
+    (GET on the base URL) sees the secure Pi as reachable instead of a
+    404. Does NOT expose the HMAC key or any secret.
+    """
+    return jsonify({
+        "system": "Secure Balloon Control System",
+        "pi": "Pi #6 (10.30.0.25)",
+        "vlan": "VLAN30 (Secure Network)",
+        "security": f"ENABLED - HMAC-{HMAC_MODE}, I2C cross-check, rate limiting, Wazuh logging"
+    })
 
 @app.route('/status')
 def status():
@@ -648,6 +758,9 @@ def status():
         "rejected_network_count": rejected_network_count,
         "anomaly_count": anomaly_count,
         "emergency_stop_count": emergency_stop_count,
+        "hmac_mode": HMAC_MODE,
+        "hmac_valid_count": hmac_valid_count,
+        "hmac_failed_count": hmac_failed_count,
         "target_pressure": TARGET_PRESSURE,
         "max_safe_pressure": MAX_SAFE_PRESSURE,
         "absolute_max_pressure": ABSOLUTE_MAX_PRESSURE,
@@ -658,10 +771,11 @@ def status():
 @app.route('/sensor', methods=['POST'])
 def update_sensor():
     """
-    ✓ SECURE /sensor endpoint - validates network data against local I2C sensor
+    SECURE /sensor endpoint - validates network data against local I2C sensor
 
     Security features:
-    - Cross-checks network claim against local I2C reading (rejects if >1.0 PSI difference)
+    - HMAC-SHA256 signature check with timestamp + replay protection (see HMAC_MODE)
+    - Cross-checks network claim against local I2C reading (rejects if > SENSOR_MISMATCH_THRESHOLD)
     - Rate limiting (max 2 Hz)
     - Rate-of-change validation (max 5.0 PSI/sec)
     - Range validation (0-100 PSI)
@@ -671,11 +785,37 @@ def update_sensor():
     global current_pressure_network, last_network_update, last_network_pressure
     global network_sensor_count, accepted_network_count, rejected_network_count
     global attack_detected, anomaly_count, last_attack_time
+    global hmac_valid_count, hmac_failed_count
 
     from flask import request
 
-    data = request.json
+    raw_body = request.get_data(cache=True)
     network_sensor_count += 1
+
+    # Validation 0: Message authentication (HMAC). Skipped entirely when HMAC_MODE == "off".
+    if HMAC_MODE != "off":
+        sig_ok, sig_reason = verify_signature(raw_body, request.headers)
+        if sig_ok:
+            hmac_valid_count += 1
+        else:
+            hmac_failed_count += 1
+            if HMAC_MODE == "enforce":
+                rejected_network_count += 1
+                attack_detected = True
+                last_attack_time = datetime.now()
+                log_to_wazuh("alert",
+                    f"ATTACK: Unauthenticated sensor data rejected ({sig_reason}) from {request.remote_addr}",
+                    "hmac_rejected")
+                return jsonify({
+                    "status": "rejected",
+                    "reason": "authentication_failed",
+                    "detail": sig_reason
+                }), 401
+            log_to_wazuh("warning",
+                f"HMAC monitor: signature check failed ({sig_reason}) from {request.remote_addr} - not enforced",
+                "hmac_monitor")
+
+    data = request.json
 
     claimed_pressure = data.get('pressure', None)
     source = data.get('source', 'unknown')
@@ -781,19 +921,21 @@ def main():
     print("  Pi #6 (10.30.0.25) - VLAN30 (Secure Network)")
     print("=" * 60)
     print("\nSECURITY FEATURES:")
-    print("  ✓ Direct I²C sensor reading (no network exposure)")
-    print("  ✓ Wazuh SIEM logging enabled")
-    print("  ✓ Input validation and anomaly detection")
-    print("  ✓ Attack detection system")
-    print("  ✓ Redundant safety checks")
-    print("  ✓ Firewall isolation")
+    print("  Direct I²C sensor reading (no network exposure)")
+    print("  Wazuh SIEM logging enabled")
+    print("  Input validation and anomaly detection")
+    print("  Attack detection system")
+    print("  Redundant safety checks")
+    print("  Firewall isolation")
     print("=" * 60)
     print(f"  Target Pressure: {TARGET_PRESSURE} PSI")
     print(f"  Max Safe Pressure: {MAX_SAFE_PRESSURE} PSI")
     print(f"  Absolute Max: {ABSOLUTE_MAX_PRESSURE} PSI")
     print(f"  Sensor Available: {SENSOR_AVAILABLE}")
     print(f"  Relays Available: {RELAYS_AVAILABLE}")
+    print(f"  HMAC mode: {HMAC_MODE} ({HMAC_CONFIG_NOTE}; key {'set' if HMAC_KEY else 'NOT set'})")
     print("=" * 60)
+    log_to_wazuh("info", f"HMAC mode: {HMAC_MODE} ({HMAC_CONFIG_NOTE}; key {'set' if HMAC_KEY else 'NOT set'})", "hmac_config")
     print("\nInitializing MQTT connection...")
     init_mqtt()
 
@@ -806,7 +948,7 @@ def main():
     set_relay(RELAY_INFLATE, False)
     set_relay(RELAY_DOWNSTREAM, False)
     set_relay(RELAY_UPSTREAM, False)
-    print("✓ All relays initialized to OFF")
+    print("All relays initialized to OFF")
     time.sleep(0.5)  # Let hardware settle before starting control loop
 
     print("\nStarting Flask status server on port 5000 (all interfaces)...")
