@@ -30,7 +30,9 @@ if ($IncludeDemoBoards) {
     Write-Host '   Bottles fitted? Area clear? Kill switch within reach?' -ForegroundColor Red
     $answer = Read-Host 'Type YES to include the demo boards (anything else = hospital Pis only)'
     if ($answer -ceq 'YES') {
-        $targets += @{ Host = 'username@10.30.0.25';     Services = @('balloon-control-secure') }
+        # wazuh-agent: after a cold boot it can stall (Wazuh VM not up yet + clock jump on resync), so the
+        # rejection logs never reach Wazuh. Restarting it after the clock sync fixes that (found 2026-11-12).
+        $targets += @{ Host = 'username@10.30.0.25';     Services = @('wazuh-agent', 'balloon-control-secure') }
         $targets += @{ Host = 'username@192.168.50.100'; Services = @('balloon-sensor-publisher', 'balloon-control-api') }
     } else {
         Write-Host 'Demo boards skipped.' -ForegroundColor Yellow

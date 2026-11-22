@@ -92,7 +92,7 @@ The switch was factory-reset in October and every older port table is out of dat
 
 | UDM-SE port | Device |
 |---|---|
-| 1 | **Admin_Laptop**: VLAN 30, **no DHCP**, so set the laptop to static 10.30.0.30 (see 1C) |
+| 1 | **Admin_Laptop**: VLAN 30, **DHCP works** (laptop gets 10.30.0.122; see 1C) |
 | 3 | TrueNAS **eno1** → `br0` (10.30.0.44 and **all VMs**). **Critical:** no VMs without this cable. |
 | 5 | iDRAC9 |
 | 7 | R720 **eno3** ("third nic test"), passed straight through to the **deprecated `suricata_ids` VM** (old capture link from the VM-based IDS design). Not used by the current demo: the IDS is now the bare-metal laptop on lab switch port 7. Verified 2026-11-06: unplugging it changed nothing. Optional. |
@@ -105,11 +105,22 @@ Lab switch ports confirmed so far: 6 = Suricata mgmt, 7 = Suricata mirror, 9/10/
 **Take phone photos of the back of the rack with every cable plugged in.** At the venue you just match the photo.
 
 ### 1C. Give the admin laptop a home on VLAN 30
-- [x] **Done 2026-11-06:** the laptop uses **UDM-SE port 1 ("Admin_Laptop", VLAN 30)**. That port gives **no DHCP address** (you get 169.254.x), so set the laptop's wired adapter (Intel I219-LM, "Ethernet") by hand: Settings → Network & internet → Ethernet → IP assignment → Manual → IPv4 **10.30.0.30**, mask **255.255.255.0**, gateway **10.30.0.1**, DNS **10.30.0.1**. Verified: the UDM-SE UI, TrueNAS, Node-RED and MQTT all answer from there.
-  - At home with Wi-Fi on, leave the gateway blank so Wi-Fi keeps the internet. At the venue, set the gateway to 10.30.0.1 (Wi-Fi off) so you can reach VLAN 2.
+- [x] **Done 2026-11-06, corrected 2026-11-12:** the laptop uses **UDM-SE port 1 ("Admin_Laptop", VLAN 30)** with the **built-in port**. That port **does give DHCP**: the laptop gets **10.30.0.122** with gateway/DNS 10.30.0.1. Nothing to configure. (The old note said "no DHCP, set static 10.30.0.30". That static setting actually sits on the **USB dongle**, adapter "Ethernet 4", which is fine as a spare but isn't the one in use.)
+  - Windows adapter names: **"Ethernet"** (no number) = built-in Intel I219-LM, the one to use. "Ethernet 3" = VirtualBox (ignore). "Ethernet 4" = Realtek USB 2.5GbE dongle.
+  - **At the venue:** Wi-Fi off, cable in port 1, done. DHCP gives you the gateway, so VLAN 2 is reachable.
+  - **At home with Wi-Fi for internet** (what the 2026-11-12 rehearsal used, so Claude Code stayed online while the lab ran on the Mock WAN). In an admin PowerShell:
+    `Set-NetIPInterface -InterfaceAlias Ethernet -InterfaceMetric 50` (internet prefers Wi-Fi)
+    `route add 192.168.50.0 mask 255.255.255.0 10.30.0.1` and `route add 192.168.0.0 mask 255.255.255.0 10.30.0.1` (VLAN 2 + switch stay on Ethernet; gone after reboot)
+    Undo the metric afterwards: `Set-NetIPInterface -InterfaceAlias Ethernet -AutomaticMetric Enabled`
 - [ ] Label the cable "ADMIN LAPTOP → UDM-SE port 1".
 
 ### 1D. Rehearse the whole thing **on the laptop, with the Mock WAN**
+**Done 2026-11-12** (full cold shutdown → power-on → all 22 green, boards holding, IDS → Elasticsearch flowing; attack not re-run). Found and fixed during it:
+- **VM clocks wrong with no internet** (8 h behind; Pis followed). Fixed: every VM set to **Time = UTC** in TrueNAS, TrueNAS timezone → America/New_York. See section 8, "Pi/VM clocks hours off".
+- **HAPI OAuth2 proxy (4180) unreachable from VLAN 30**: ufw only allowed 192.168.1.200. Added `ufw` rule 4: allow 10.30.0.0/24 → 4180/tcp. Login now works (`http://10.30.0.56:4180/fhir/`).
+- Port 1 gives DHCP (1C corrected). iDRAC login added to `CON_CREDENTIALS.md`.
+- **Known issue, fix after the con:** Docker publishes HAPI's 8080 on 0.0.0.0, which skips ufw, so rules 2–3 ("8080 Mirth only") are not enforced. HAPI is reachable without login from VLAN 30. Fix later with a `DOCKER-USER` iptables rule or by binding the container port.
+
 The point is to prove the venue setup works, so do it exactly as you will there:
 - [ ] Unplug the UDM-SE WAN from the home switch and plug it into the **standalone dumb switch** (Mock WAN). This also proves the lab works with no internet: NTP, Keycloak SSO and Grafana all have to work offline.
 - [ ] Laptop: Wi-Fi **off**, Ethernet into its VLAN 30 port.
@@ -187,6 +198,7 @@ Allow **2 hours** from unloading to demo-ready. Match the rack photos from 1B.
 | 4.6 | Boot **Suricata laptop**. Check `ip -br addr \| grep enx` shows the IP on **…53e0**. | 192.168.50.191 on …53e0, no IP on …4370 | Swap the dongle cables. |
 | 4.7 | **Admin laptop:** Wi-Fi off, Ethernet in. `ipconfig` shows its VLAN 30 address. | 10.30.0.x | Port profile isn't VLAN 30 (UniFi). |
 | 4.8 | **Wait ~15 min** for the VMs (PostgreSQL → MQTT → Keycloak → Elasticsearch → the rest). Run `.\con_health_check.ps1` every few minutes. | VMs turn green one by one | Section 8, "VM not answering". |
+| 4.8b | **Check the time server** (from the admin laptop): `w32tm /stripchart /computer:10.30.0.51 /samples:1 /dataonly` | Offset within a few seconds (e.g. `-00.43s`) | Hours off (e.g. `-28799s`) = a VM's TrueNAS "Time" setting is back on Local. Section 8, "Pi/VM clocks hours off". Don't restart the Pis until this is right. |
 | 4.9 | **Unseal Vault:** `http://10.30.0.58:8200`, paste unseal keys 1, 2, 3 (`CON_CREDENTIALS.md`), Unseal after each. | Status: Unsealed | Vault VM not up yet: wait. |
 | 4.10 | **Resync Pi clocks + restart the hospital Pi services:** `.\restart_pi_services.ps1` (needed after every cold boot; the Pis start before MQTT/NTP is ready, so paho-mqtt fails silently and the clocks stay wrong). This does **not** touch the demo boards. | Each Pi prints `synced=yes`, a clock matching the PC, and `active` | Section 8, "HR gauges at 0" / "Grafana says No data". |
 | 4.10b | **Demo boards (this starts the pumps and valves):** only with bottles fitted, the area clear and the kill switch in reach: `.\restart_pi_services.ps1 -IncludeDemoBoards`, then type `YES`. | Both systems pressurize to ~25 PSI | Kill switch OFF if anything looks wrong. |
@@ -281,7 +293,8 @@ Start with `.\con_health_check.ps1`. Most problems show up as a red line.
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Admin laptop can't reach anything | No static IP (port 1 has no DHCP, so you get 169.254.x), Wi-Fi stealing the route, or wrong port | `ipconfig`: must be 10.30.0.30. Set it manually (1C). Turn Wi-Fi off. Must be in UDM-SE port 1. |
+| Admin laptop can't reach anything | Cable in the wrong adapter/port, or Wi-Fi stealing the route | `ipconfig`: adapter **"Ethernet"** (built-in) should have **10.30.0.122** (DHCP). Must be in UDM-SE port 1. Turn Wi-Fi off. If you use the USB dongle instead, it's static 10.30.0.30 (1C). |
+| **Pi/VM clocks hours off**, `restart_pi_services.ps1` says `synced=yes` but the clocks are wrong; Grafana "No data" | The time server (MQTT VM 10.30.0.51) booted with a wrong clock and has no internet to correct it. Cause found 2026-11-12: VMs had TrueNAS "Time = **Local**" with TrueNAS on Los Angeles time, so Ubuntu read Pacific time as UTC (exactly 8 h behind) | Check: `w32tm /stripchart /computer:10.30.0.51 /samples:1 /dataonly`. Fix: TrueNAS → Virtualization → VM → **Stop** → Edit → **Time: UTC** → Save → Start (all VMs are UTC since 2026-11-12). Then rerun `.\restart_pi_services.ps1`. |
 | UDM-SE WAN shows only "IPv6", no IPv4; at home the lab is unreachable and the home console shows ever-increasing IPs (.15, .16, …) | **WAN2 ("Internet 2", port 10, unplugged) had a 192.168.1.x config** overlapping the home network, so WAN1 rejected every offered address (found and fixed 2026-11-06) | UDM-SE → Settings → Internet → Internet 2 → IPv4 = **DHCP**. Keep WAN1 on DHCP. Home console: fixed IP 192.168.1.24 for MAC 6c:63:f8:67:c9:2d. Never type 192.168.1.1 into a UDM-SE WAN field (that's the home router). |
 | Everything on VLAN 30 works, nothing on 192.168.50.x | **Mock WAN** has no link, or the firewall rules aren't loaded | Check the WAN link (4.3). Then on the UDM-SE: `iptables -L FORWARD -n -v \| grep 192.168.50` and, if empty, `iptables-restore < /etc/iptables/rules.v4` |
 | Vulnerable gauges at 0, secure fine | Rule `ALLOW_VULNERABLE_PI_TO_MQTT` (priority 19998, below 20001) not active, or Mock WAN | On the Vulnerable Pi: `timeout 5 bash -c 'cat < /dev/null > /dev/tcp/10.30.0.51/1883' && echo open`. If not open, fix the rule/WAN, then restart both Vulnerable Pi services. |
@@ -295,14 +308,17 @@ Start with `.\con_health_check.ps1`. Most problems show up as a red line.
 | ECG flat with "--" for one Pi | That Pi sent nothing for 3 s | Same as "HR gauges at 0" |
 | Node-RED/Grafana login loop or SSO error | Keycloak not up yet | Wait a minute (auto-retry). Then `ssh username@10.30.0.57 "sudo systemctl status keycloak"`. Grafana: use the local `admin` login meanwhile. |
 | Wazuh SSO fails | Known: SSO is broken | Use local `admin` basic auth (always). |
+| **Secure Pi** agent Disconnected (others fine) | Agent stalled: the Pi booted before the Wazuh VM, then its clock jumped on resync and the agent stopped retrying (log goes silent; seen 2026-11-12) | `restart_pi_services.ps1 -IncludeDemoBoards` now restarts `wazuh-agent` on the Secure Pi too. By hand: `ssh username@10.30.0.25 "sudo systemctl restart wazuh-agent"`, then `sudo grep -i 'connected to the server' /var/ossec/logs/ossec.log \| tail -n 1` |
 | Wazuh agents disconnected | Manager started before agents | `ssh username@10.30.0.55 "sudo systemctl restart wazuh-manager"`, then check with `sudo /var/ossec/bin/agent_control -l` |
 | Wazuh dashboard won't load | Disk full again | `df -h` on 10.30.0.55. See the 2026-10-31 entry in `TROUBLESHOOTING_HISTORY.md`. |
 | Vault says "Sealed" | Normal after reboot | Unseal (4.9) |
+| HAPI login page (`:4180/fhir/`) times out | ufw on the HAPI VM doesn't allow your IP to 4180 (was only 192.168.1.200 until 2026-11-12) | `ssh username@10.30.0.56 "sudo ufw status numbered"`: rule "4180/tcp ALLOW IN 10.30.0.0/24" must exist. If `oauth2-proxy` itself is down, it retries every 5 s until Keycloak is up. |
 | Mirth channel stopped / errors climbing | Channel stopped, or HAPI down | Mirth UI: right-click channel → Start. HAPI: `ssh -J username@10.30.0.55 username@10.30.0.56` then `sudo docker start hapi-fhir` |
 | Grafana panels show SSL errors | Datasource sslmode lost | On 10.30.0.53: `sudo sqlite3 /var/lib/grafana/grafana.db "UPDATE data_source SET json_data = json_set(json_data, '$.sslmode', 'require') WHERE type = 'grafana-postgresql-datasource';"` then `sudo systemctl restart grafana-server` |
 | Grafana heart-rate graphs say "No data" and the **Cancel** button keeps spinning, but the BPM tile works | Graph queries too slow (fixed 2026-11-06, dashboard v37): `$__timeFilter(timestamp AT TIME ZONE …)` stopped PostgreSQL using its index, so each panel took 11.5 s and the 5 s refresh cancelled them | Queries now use `timestamp BETWEEN ($__timeFrom()::timestamptz AT TIME ZONE 'America/New_York') AND (...)`, about 0.1 s. If it comes back, roll back in Dashboard → Settings → Versions, or compare with `backups\grafana_heart_rate_dashboard_before_2026-11-06.json`. Don't set refresh below 10 s. |
 | Grafana "BPM > 120" tile says "No data" | Pi #4 silent for 30 s | Restart `heartrate4` |
 | IDS dashboard frozen | Filebeat or rule `ALLOW_SURICATA_TO_ELASTICSEARCH` (priority 19999) | On the Suricata laptop: `sudo systemctl restart filebeat`, then `sudo journalctl -u filebeat -n 30`. Check the rule/Mock WAN. |
+| IDS dashboard shows only `stats` events (no IPs, no http/flow), but tcpdump on …4370 sees traffic | Suricata af-packet capture stalled: `decoder.pkts` in `/var/log/suricata/stats.log` stops rising while `capture.kernel_drops` climbs. Cause: NetworkManager running DHCP on the mirror dongle and resetting the link (found at Queen City Con 2026-11-13) | `sudo nmcli device set enx00051b514370 managed no && sudo systemctl restart suricata`. Test: 50× `curl http://192.168.50.100:5000/status` → `http` events in `eve.json`. Permanent: `/etc/NetworkManager/conf.d/99-suricata-mirror.conf` with `[keyfile]` / `unmanaged-devices=mac:00:05:1b:51:43:70` |
 | IDS shows nothing during the attack | Dongles swapped, or mirror config lost | `ip -br addr \| grep enx`: the IP must be on **…53e0**. UniFi: port 7 mirroring port 15. The Vulnerable Pi must actually be on port 15. |
 | Secure panel never turns red | Attack isn't reaching 10.30.0.25 | `attack_spoof.py --dual --check`. This path worked in the March dual-target tests. Check the Mock WAN, and check that no new UDM-SE rule blocks VLAN 2 → 10.30.0.25:5000. |
 | Secure panel stuck red after the attack | Status not updating | Watch `balloon/secure/status` in T2. Restart `balloon-control-secure` on the Secure Pi. |
@@ -377,7 +393,7 @@ Know what the demo **really** needs, and drop the rest.
 | Vulnerable Pi | 192.168.50.100 | `balloon-sensor-publisher.service` + `balloon-control-api.service`, Flask 5000 |
 | Suricata laptop | 192.168.50.191 | `suricata`, `filebeat` |
 | U6 Pro AP | 10.30.0.246 | |
-| Admin laptop | ____________ | from 1C |
+| Admin laptop | 10.30.0.122 | DHCP on UDM-SE port 1, built-in "Ethernet" adapter (1C) |
 
 UDM-SE firewall exceptions (all must be priority **< 20001**, before `BLOCK_VLAN2_TO_VLAN30`): `ALLOW_VULNERABLE_PI_TO_MQTT` (192.168.50.100 → 10.30.0.51 TCP 1883), `ALLOW_SURICATA_TO_ELASTICSEARCH` (192.168.50.191 → 10.30.0.60 TCP 9200), `ALLOW_VLAN2_TO_NTP` (VLAN 2 → 10.30.0.51 UDP 123).
 
